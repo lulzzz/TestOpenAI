@@ -1,0 +1,56 @@
+﻿@using Azure.AI.OpenAI;
+@using Azure;
+@using System.Text;
+<h3>Summarize</h3>
+<div class="mb-3">
+    <textarea @bind="prompt" class="form-control" rows="20"></textarea>
+</div>
+<div class="mb-3 border border-2 p-2 rounded">
+    @promptResponse
+</div>
+<button class="btn btn-primary" type="button" role="button" @onclick="Summarize">Summarize</button>
+
+@code {
+    [Inject] protected IConfiguration configuration { get; set; }
+
+    string AOAI_ENDPOINT;
+    string AOAI_KEY;
+    string AOAI_DEPLOYMENTID_TEXT;
+    OpenAIClient openAIClient;
+    string prompt;
+    string promptResponse;
+    protected override void OnInitialized()
+    {
+        AOAI_ENDPOINT = configuration.GetValue<string>("Chat:AOAI_ENDPOINT");
+        AOAI_KEY = configuration.GetValue<string>("Chat:AOAI_KEY");
+        AOAI_DEPLOYMENTID_TEXT = configuration.GetValue<string>("Chat:AOAI_DEPLOYMENTID_TEXT");
+
+        var endpoint = new Uri(AOAI_ENDPOINT);
+        var credentials = new Azure.AzureKeyCredential(AOAI_KEY);
+        openAIClient = new OpenAIClient(endpoint, credentials);
+    }
+
+    protected async Task Summarize()
+    {
+        promptResponse = "Loading...";
+        var completionsOptions = new CompletionsOptions()
+            {
+                Prompts = { prompt },
+                Temperature = (float)0.3,
+                MaxTokens = 250,
+                NucleusSamplingFactor = (float)1,
+                FrequencyPenalty = (float)0,
+                PresencePenalty = (float)0,
+                GenerationSampleCount = 1,
+            };
+        Completions response = await openAIClient.GetCompletionsAsync(AOAI_DEPLOYMENTID_TEXT, completionsOptions);
+
+        //Response<StreamingCompletions> response = await openAIClient.GetCompletionsStreamingAsync(AOAI_DEPLOYMENTID_TEXT, completionsOptions);
+        //using StreamingCompletions streamingCompletions = response.Value;
+        //await foreach (var item in streamingCompletions.GetChoicesStreaming())
+        //{
+
+        //}
+        promptResponse = String.Join("", response.Choices.Select(c => c.Text));
+    }
+}

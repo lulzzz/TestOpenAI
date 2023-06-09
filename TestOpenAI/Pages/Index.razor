@@ -1,0 +1,34 @@
+﻿@page "/"
+@using Azure.AI.OpenAI;
+@using Azure;
+
+<PageTitle>Index</PageTitle>
+
+<p>
+    <label>
+        Select your chat type:
+        <select @onchange="OnDropdownChange" class="form-select">
+            <option value="">Select a value</option>
+            <option value="@nameof(_Summarize)">Summarize</option>
+            <option value="@nameof(_Chat)">Chat</option>
+        </select>
+    </label>
+</p>
+@if (selectedType is not null)
+{
+    <div class="border border-primary my-1 p-1">
+        <DynamicComponent Type="@selectedType" />
+    </div>
+}
+
+
+
+@code{
+    
+    private Type? selectedType;
+    private void OnDropdownChange(ChangeEventArgs e)
+    {
+        selectedType = e.Value?.ToString()?.Length > 0 ?
+            Type.GetType($"TestOpenAI.Pages.{e.Value}") : null;
+    }
+}

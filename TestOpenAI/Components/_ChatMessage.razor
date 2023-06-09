@@ -1,0 +1,46 @@
+﻿@using Azure.AI.OpenAI;
+<div class="d-flex flex-row @justifyContent mb-4">
+    @if (!String.IsNullOrWhiteSpace(imgSrc) && (chatMessage.Role == ChatRole.System || chatMessage.Role == ChatRole.Assistant))
+    {
+        <img style="height:45px;width:45px;" src="@imgSrc" />
+    }
+    <div class="p-3 @startEndMargin border border-1 rounded mt-auto" style="background-color: @backgroundColor;">
+        <p class="small mb-0">
+            @chatMessage.Content
+        </p>
+    </div>
+    @if (!String.IsNullOrWhiteSpace(imgSrc) && (chatMessage.Role == ChatRole.User))
+    {
+        <img style="height:45px;width:45px;" src="@imgSrc" />
+    }
+</div>
+
+@code {
+    [Parameter] public ChatMessage chatMessage{ get; set; }
+
+    private string justifyContent;
+    private string imgSrc;
+    private string backgroundColor;
+    private string startEndMargin;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        switch (chatMessage.Role)
+        {
+            case var value when (value == ChatRole.System || value==ChatRole.Assistant):
+                justifyContent = "justify-content-start";
+                imgSrc = "https://ui-avatars.com/api/?rounded=true&name=OAI&length=3&size=45";
+                backgroundColor = "rgba(57, 192, 237,.2)";
+                startEndMargin = "ms-3";
+                break;
+            case var value when (value == ChatRole.User):
+                justifyContent = "justify-content-end";
+                imgSrc = "https://ui-avatars.com/api/?name=me&rounded=true&size=45";
+                backgroundColor = "#fbfbfb";
+                startEndMargin = "me-3";
+                break;
+            default:
+                break;
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+}

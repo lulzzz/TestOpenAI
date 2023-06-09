@@ -1,25 +1,29 @@
 ﻿@using Azure.AI.OpenAI;
 @using Azure;
 @using System.Text;
-<h3>Chat</h3>
-<div class="border border-1">
+@*<h3>Chat</h3>*@
+<div class="card">
+    <div class="card-header">Chat</div>
+    <div class="card-body" style="height:400px; overflow-y:auto;">
     @foreach(var msg in completionOptions?.Messages??new List<ChatMessage>())
     {
-        <div class="card">
+        @*<div class="card">
             <div class="card-header">
                 @msg.Role.ToString()
             </div>
             <div class="card-body">
                 @msg.Content
             </div>
-        </div>
+        </div>*@
+        <_ChatMessage chatMessage="@msg" />
     }
+    </div>
 </div>
-<div class="border border-1 form-floating">
-    <textarea class="form-control" rows="3" @bind="userInput" id="floatingInput"></textarea>
-    <label for="floatingInput">Type your query here</label>
+<div class="mt-4 border border-1 input-group">
+    <textarea class="form-control" rows="3" @bind="userInput" id="floatingInput" placeholder="Ask me something."></textarea>
+    <button class="btn btn-outline-secondary" type="button" @onclick="DoChat"><i class="oi oi-arrow-circle-right"></i></button>
 </div>
-<button type="button" class="btn btn-primary" @onclick="DoChat">Send</button>
+@*<button type="button" class="btn btn-primary" @onclick="DoChat">Send</button>*@
 @code {
     [Inject] protected IConfiguration configuration { get; set; }
 
@@ -41,19 +45,27 @@
         var credentials = new Azure.AzureKeyCredential(AOAI_KEY);
         openAIClient = new OpenAIClient(endpoint, credentials);
 
-        completionOptions = new ChatCompletionsOptions
-            {
-                MaxTokens = 400,
-                Temperature = 1f,
-                FrequencyPenalty = 0.0f,
-                PresencePenalty = 0.0f,
-                NucleusSamplingFactor = 0.95f // Top P
-            };
-        completionOptions.Messages.Add(new ChatMessage(ChatRole.System, @"Hi, how can I help you today?"));
-        ChatCompletions response = await openAIClient.GetChatCompletionsAsync(AOAI_DEPLOYMENTID_CHAT, completionOptions);
-        completionOptions.Messages.Add(response.Choices[0].Message);
-    }
 
+
+    }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            completionOptions = new ChatCompletionsOptions
+                {
+                    MaxTokens = 400,
+                    Temperature = 1f,
+                    FrequencyPenalty = 0.0f,
+                    PresencePenalty = 0.0f,
+                    NucleusSamplingFactor = 0.95f // Top P
+                };
+            completionOptions.Messages.Add(new ChatMessage(ChatRole.System, @"Hi, how can I help you today?"));
+            ChatCompletions response = await openAIClient.GetChatCompletionsAsync(AOAI_DEPLOYMENTID_CHAT, completionOptions);
+            completionOptions.Messages.Add(response.Choices[0].Message);
+            await InvokeAsync(StateHasChanged);
+        }
+    }
     protected async Task DoChat()
     {
         if (String.IsNullOrWhiteSpace(userInput))
@@ -65,10 +77,10 @@
             completionOptions.Messages.Add(new ChatMessage(ChatRole.User, userInput));
             ChatCompletions response = await openAIClient.GetChatCompletionsAsync(AOAI_DEPLOYMENTID_CHAT, completionOptions);
             completionOptions.Messages.Add(response.Choices[0].Message);
-            
+
 
             userInput = String.Empty;
         }
-        
+        await InvokeAsync(StateHasChanged);
     }
 }

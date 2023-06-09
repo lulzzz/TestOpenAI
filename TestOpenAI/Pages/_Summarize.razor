@@ -24,6 +24,7 @@
     string AOAI_ENDPOINT;
     string AOAI_KEY;
     string AOAI_DEPLOYMENTID_TEXT;
+    string AOAI_DEPLOYMENTID_EMBEDDED;
     OpenAIClient openAIClient;
     string prompt;
     string promptResponse;
@@ -33,6 +34,7 @@
         AOAI_ENDPOINT = configuration.GetValue<string>("Chat:AOAI_ENDPOINT");
         AOAI_KEY = configuration.GetValue<string>("Chat:AOAI_KEY");
         AOAI_DEPLOYMENTID_TEXT = configuration.GetValue<string>("Chat:AOAI_DEPLOYMENTID_TEXT");
+        AOAI_DEPLOYMENTID_EMBEDDED = configuration.GetValue<string>("Chat:AOAI_DEPLOYMENTID_EMBEDDED");
 
         var endpoint = new Uri(AOAI_ENDPOINT);
         var credentials = new Azure.AzureKeyCredential(AOAI_KEY);
@@ -67,6 +69,7 @@
                 await InvokeAsync(StateHasChanged);
             }
         }
+        
         
         //promptResponse = String.Join("", response.Choices.Select(c => c.Text));
     }

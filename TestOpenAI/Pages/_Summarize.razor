@@ -6,7 +6,15 @@
     <textarea @bind="prompt" class="form-control" rows="20"></textarea>
 </div>
 <div class="mb-3 border border-2 p-2 rounded">
-    @promptResponse
+    @if(loading)
+    {
+        <text>Loading...</text>
+    }
+    else
+    {
+        @promptResponse
+    }
+    
 </div>
 <button class="btn btn-primary" type="button" role="button" @onclick="Summarize" disabled="@loading">Summarize</button>
 
@@ -52,13 +60,14 @@
 
         await foreach (var item in streamingCompletions.GetChoicesStreaming())
         {
+            loading = false;
             await foreach(var i in item.GetTextStreaming())
             {
                 promptResponse += i;
                 await InvokeAsync(StateHasChanged);
             }
         }
-        loading = false;
+        
         //promptResponse = String.Join("", response.Choices.Select(c => c.Text));
     }
 }

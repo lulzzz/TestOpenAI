@@ -8,7 +8,7 @@
 <div class="mb-3 border border-2 p-2 rounded">
     @promptResponse
 </div>
-<button class="btn btn-primary" type="button" role="button" @onclick="Summarize">Summarize</button>
+<button class="btn btn-primary" type="button" role="button" @onclick="Summarize" disabled="@loading">Summarize</button>
 
 @code {
     [Inject] protected IConfiguration configuration { get; set; }
@@ -19,6 +19,7 @@
     OpenAIClient openAIClient;
     string prompt;
     string promptResponse;
+    bool loading = false;
     protected override void OnInitialized()
     {
         AOAI_ENDPOINT = configuration.GetValue<string>("Chat:AOAI_ENDPOINT");
@@ -32,7 +33,8 @@
 
     protected async Task Summarize()
     {
-        promptResponse = "Loading...";
+        loading = true;
+        promptResponse = "";// "Loading...";
         var completionsOptions = new CompletionsOptions()
             {
                 Prompts = { prompt },
@@ -43,14 +45,20 @@
                 PresencePenalty = (float)0,
                 GenerationSampleCount = 1,
             };
-        Completions response = await openAIClient.GetCompletionsAsync(AOAI_DEPLOYMENTID_TEXT, completionsOptions);
+        //Completions response = await openAIClient.GetCompletionsAsync(AOAI_DEPLOYMENTID_TEXT, completionsOptions);
 
-        //Response<StreamingCompletions> response = await openAIClient.GetCompletionsStreamingAsync(AOAI_DEPLOYMENTID_TEXT, completionsOptions);
-        //using StreamingCompletions streamingCompletions = response.Value;
-        //await foreach (var item in streamingCompletions.GetChoicesStreaming())
-        //{
+        Response<StreamingCompletions> responseStreaming = await openAIClient.GetCompletionsStreamingAsync(AOAI_DEPLOYMENTID_TEXT, completionsOptions);
+        using StreamingCompletions streamingCompletions = responseStreaming.Value;
 
-        //}
-        promptResponse = String.Join("", response.Choices.Select(c => c.Text));
+        await foreach (var item in streamingCompletions.GetChoicesStreaming())
+        {
+            await foreach(var i in item.GetTextStreaming())
+            {
+                promptResponse += i;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        loading = false;
+        //promptResponse = String.Join("", response.Choices.Select(c => c.Text));
     }
 }

@@ -65,9 +65,10 @@
             completionOptions.Messages.Add(new ChatMessage(ChatRole.User, userInput));
             ChatCompletions response = await openAIClient.GetChatCompletionsAsync(AOAI_DEPLOYMENTID_CHAT, completionOptions);
             completionOptions.Messages.Add(response.Choices[0].Message);
+            
 
             userInput = String.Empty;
         }
-        await InvokeAsync(StateHasChanged);
+        
     }
 }

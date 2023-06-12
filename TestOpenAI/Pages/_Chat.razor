@@ -2,7 +2,7 @@
 @using Azure;
 @using System.Text;
 @*<h3>Chat</h3>*@
-<div class="card">
+<div class="card shadow">
     <div class="card-header">Chat</div>
     <div class="card-body" style="height:400px; overflow-y:auto;">
     @foreach(var msg in completionOptions?.Messages??new List<ChatMessage>())
@@ -19,7 +19,7 @@
     }
     </div>
 </div>
-<div class="mt-4 border border-1 input-group">
+<div class="mt-4 border border-1 input-group shadow">
     <textarea class="form-control" rows="3" @bind="userInput" id="floatingInput" placeholder="Ask me something."></textarea>
     <button class="btn btn-outline-secondary" type="button" @onclick="DoChat"><i class="oi oi-arrow-circle-right"></i></button>
 </div>

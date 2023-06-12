@@ -3,9 +3,9 @@
 @using System.Text;
 <h3>Summarize</h3>
 <div class="mb-3">
-    <textarea @bind="prompt" class="form-control" rows="20"></textarea>
+    <textarea @bind="prompt" class="form-control shadow" rows="20"></textarea>
 </div>
-<div class="mb-3 border border-2 p-2 rounded">
+<div class="mb-3 border border-2 p-2 rounded shadow">
     @if(loading)
     {
         <text>Loading...</text>

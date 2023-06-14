@@ -5,18 +5,27 @@
 <div class="mb-3">
     <textarea @bind="prompt" class="form-control shadow" rows="20"></textarea>
 </div>
-<div class="mb-3 border border-2 p-2 rounded shadow">
-    @if(loading)
+<div class="mb-3 border border-2 p-2 rounded shadow white-space-preline pt-0">
+    @*@if(loading)
     {
         <text>Loading...</text>
     }
     else
     {
-        @promptResponse
-    }
-    
+        @((MarkupString)promptResponse)
+    }*@
+    @((MarkupString)promptResponse)
 </div>
-<button class="btn btn-primary" type="button" role="button" @onclick="Summarize" disabled="@loading">Summarize</button>
+<button class="btn btn-primary" type="button" role="button" @onclick="Summarize" disabled="@loading">
+    @if (loading)
+    {
+        <span>Loading...</span>
+    }
+    else
+    {
+        <span>Summarize</span>
+    }
+</button>
 
 @code {
     [Inject] protected IConfiguration configuration { get; set; }
@@ -49,7 +58,7 @@
             {
                 Prompts = { prompt },
                 Temperature = (float)0.3,
-                MaxTokens = 250,
+                MaxTokens = 2000,// 250,
                 NucleusSamplingFactor = (float)1,
                 FrequencyPenalty = (float)0,
                 PresencePenalty = (float)0,
@@ -60,17 +69,18 @@
         Response<StreamingCompletions> responseStreaming = await openAIClient.GetCompletionsStreamingAsync(AOAI_DEPLOYMENTID_TEXT, completionsOptions);
         using StreamingCompletions streamingCompletions = responseStreaming.Value;
 
+        string reasonStop = "";
         await foreach (var item in streamingCompletions.GetChoicesStreaming())
         {
-            loading = false;
+            reasonStop = item.FinishReason;
+            loading = item.FinishReason is not null;
             await foreach(var i in item.GetTextStreaming())
             {
                 promptResponse += i;
                 await InvokeAsync(StateHasChanged);
             }
         }
-        
-        
-        //promptResponse = String.Join("", response.Choices.Select(c => c.Text));
+
+        loading = false;
     }
 }

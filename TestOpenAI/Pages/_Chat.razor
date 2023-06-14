@@ -68,6 +68,7 @@
     }
     protected async Task DoChat()
     {
+        completionOptions.MaxTokens = 1000;
         if (String.IsNullOrWhiteSpace(userInput))
         {
             completionOptions.Messages.Add(new ChatMessage(ChatRole.Assistant, @"Hmm... you must put some input."));
@@ -75,9 +76,12 @@
         else
         {
             completionOptions.Messages.Add(new ChatMessage(ChatRole.User, userInput));
+            var chatThinking = new ChatMessage(ChatRole.Assistant, "Thinking...");
+            completionOptions.Messages.Add(chatThinking);
             ChatCompletions response = await openAIClient.GetChatCompletionsAsync(AOAI_DEPLOYMENTID_CHAT, completionOptions);
-            completionOptions.Messages.Add(response.Choices[0].Message);
 
+            //completionOptions.Messages.Add(response.Choices[0].Message);
+            completionOptions.Messages[completionOptions.Messages.IndexOf(chatThinking)] = response.Choices[0].Message;
 
             userInput = String.Empty;
         }

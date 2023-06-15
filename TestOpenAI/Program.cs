@@ -13,7 +13,6 @@ builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 //builder.Services.AddSingleton<WeatherForecastService>();
 
-var children = builder.Configuration.GetChildren();
 await PyProcessors.PySetup.Initialize((s) => { Console.WriteLine(s); });
 
 var app = builder.Build();

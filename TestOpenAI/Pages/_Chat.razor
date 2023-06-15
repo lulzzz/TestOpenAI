@@ -1,6 +1,8 @@
 ﻿@using Azure.AI.OpenAI;
 @using Azure;
 @using System.Text;
+@using Microsoft.Extensions.Options;
+@using TestOpenAI.Models;
 @*<h3>Chat</h3>*@
 <div class="card shadow">
     <div class="card-header">Chat</div>
@@ -26,7 +28,7 @@
 @*<button type="button" class="btn btn-primary" @onclick="DoChat">Send</button>*@
 @code {
     [Inject] protected IConfiguration configuration { get; set; }
-
+    [Inject] protected IOptionsMonitor<AOAISettings> aoaiSettings{ get; set; }
     string AOAI_ENDPOINT;
     string AOAI_KEY;
     string AOAI_DEPLOYMENTID_CHAT;
@@ -37,9 +39,9 @@
     string userInput;
     protected override async Task OnInitializedAsync()
     {
-        AOAI_ENDPOINT = configuration.GetValue<string>("Chat:AOAI_ENDPOINT");
-        AOAI_KEY = configuration.GetValue<string>("Chat:AOAI_KEY");
-        AOAI_DEPLOYMENTID_CHAT = configuration.GetValue<string>("Chat:AOAI_DEPLOYMENTID_CHAT");
+        AOAI_ENDPOINT = aoaiSettings.CurrentValue.AOAI_ENDPOINT;// configuration.GetValue<string>("Chat:AOAI_ENDPOINT");
+        AOAI_KEY = aoaiSettings.CurrentValue.AOAI_KEY;// configuration.GetValue<string>("Chat:AOAI_KEY");
+        AOAI_DEPLOYMENTID_CHAT = aoaiSettings.CurrentValue.AOAI_DEPLOYMENTID_CHAT;// configuration.GetValue<string>("Chat:AOAI_DEPLOYMENTID_CHAT");
 
         var endpoint = new Uri(AOAI_ENDPOINT);
         var credentials = new Azure.AzureKeyCredential(AOAI_KEY);

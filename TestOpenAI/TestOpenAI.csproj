@@ -7,7 +7,22 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="python-3.11.0-embed-amd64\**" />
+    <Content Remove="python-3.11.0-embed-amd64\**" />
+    <EmbeddedResource Remove="python-3.11.0-embed-amd64\**" />
+    <None Remove="python-3.11.0-embed-amd64\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="python-3.11.0-embed-amd64.zip" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Azure.AI.OpenAI" Version="1.0.0-beta.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PyProcessors\PyProcessors.csproj" />
   </ItemGroup>
 
 </Project>

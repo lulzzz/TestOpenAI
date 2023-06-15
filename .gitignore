@@ -361,3 +361,5 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/TestOpenAI/python-3.11.0-embed-amd64
+/TestOpenAI/python-3.11.0-embed-amd64.zip

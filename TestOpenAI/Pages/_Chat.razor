@@ -31,7 +31,7 @@
     [Inject] protected IOptionsMonitor<AOAISettings> aoaiSettings{ get; set; }
     string AOAI_ENDPOINT;
     string AOAI_KEY;
-    string AOAI_DEPLOYMENTID_CHAT;
+    string AOAI_CHAT_DEPLOYMENT_NAME;
     OpenAIClient openAIClient;
     string prompt;
     string promptResponse;
@@ -41,7 +41,7 @@
     {
         AOAI_ENDPOINT = aoaiSettings.CurrentValue.AOAI_ENDPOINT;// configuration.GetValue<string>("Chat:AOAI_ENDPOINT");
         AOAI_KEY = aoaiSettings.CurrentValue.AOAI_KEY;// configuration.GetValue<string>("Chat:AOAI_KEY");
-        AOAI_DEPLOYMENTID_CHAT = aoaiSettings.CurrentValue.AOAI_DEPLOYMENTID_CHAT;// configuration.GetValue<string>("Chat:AOAI_DEPLOYMENTID_CHAT");
+        AOAI_CHAT_DEPLOYMENT_NAME = aoaiSettings.CurrentValue.AOAI_CHAT_DEPLOYMENT_NAME;// configuration.GetValue<string>("Chat:AOAI_DEPLOYMENTID_CHAT");
 
         var endpoint = new Uri(AOAI_ENDPOINT);
         var credentials = new Azure.AzureKeyCredential(AOAI_KEY);
@@ -63,7 +63,7 @@
                     NucleusSamplingFactor = 0.95f // Top P
                 };
             completionOptions.Messages.Add(new ChatMessage(ChatRole.System, @"Hi, how can I help you today?"));
-            ChatCompletions response = await openAIClient.GetChatCompletionsAsync(AOAI_DEPLOYMENTID_CHAT, completionOptions);
+            ChatCompletions response = await openAIClient.GetChatCompletionsAsync(AOAI_CHAT_DEPLOYMENT_NAME, completionOptions);
             completionOptions.Messages.Add(response.Choices[0].Message);
             await InvokeAsync(StateHasChanged);
         }
@@ -80,7 +80,7 @@
             completionOptions.Messages.Add(new ChatMessage(ChatRole.User, userInput));
             var chatThinking = new ChatMessage(ChatRole.Assistant, "Thinking...");
             completionOptions.Messages.Add(chatThinking);
-            ChatCompletions response = await openAIClient.GetChatCompletionsAsync(AOAI_DEPLOYMENTID_CHAT, completionOptions);
+            ChatCompletions response = await openAIClient.GetChatCompletionsAsync(AOAI_CHAT_DEPLOYMENT_NAME, completionOptions);
 
             //completionOptions.Messages.Add(response.Choices[0].Message);
             completionOptions.Messages[completionOptions.Messages.IndexOf(chatThinking)] = response.Choices[0].Message;

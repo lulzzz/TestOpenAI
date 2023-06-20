@@ -19,17 +19,17 @@ namespace PyProcessors
 
         public EventHandler<string> OnProcess { get; set; }
         public EventHandler<bool> OnCompleted { get; set; }
-        public PdfProcessor(string apiKey, string azureApiEndpoint, string azureApiEmbeddingDeploymentModelId, string azureApiVersion = "2023-05-15") 
+        public PdfProcessor(string? apiKey, string? azureApiEndpoint, string? azureApiEmbeddingDeploymentName, string? azureApiVersion = "2023-05-15") 
         {
             if(String.IsNullOrWhiteSpace(apiKey)) throw new ArgumentNullException(nameof(apiKey));
             if (String.IsNullOrWhiteSpace(azureApiEndpoint)) throw new ArgumentNullException(nameof(azureApiEndpoint));
             if (String.IsNullOrWhiteSpace(azureApiVersion)) throw new ArgumentNullException(nameof(azureApiVersion));
-            if (String.IsNullOrWhiteSpace(azureApiEmbeddingDeploymentModelId)) throw new ArgumentNullException(nameof(azureApiEmbeddingDeploymentModelId));
+            if (String.IsNullOrWhiteSpace(azureApiEmbeddingDeploymentName)) throw new ArgumentNullException(nameof(azureApiEmbeddingDeploymentName));
 
             OPENAI_API_KEY = apiKey;
             OPENAI_DEPLOYMENT_ENDPOINT = azureApiEndpoint;
             OPENAI_DEPLOYMENT_VERSION = azureApiVersion;
-            OPENAI_EMBEDDING_MODEL_NAME = azureApiEmbeddingDeploymentModelId;
+            OPENAI_EMBEDDING_MODEL_NAME = azureApiEmbeddingDeploymentName;
 
         }
 
@@ -69,7 +69,7 @@ namespace PyProcessors
 
                     OnProcess?.Invoke(this, "Creating embeddings");
                     dynamic embeddings = openApiLangChain.OpenAIEmbeddings(
-                        Py.kw("model", "text-embedding-ada-002"),// OPENAI_EMBEDDING_MODEL_NAME),
+                        Py.kw("model", OPENAI_EMBEDDING_MODEL_NAME),
                         Py.kw("chunk_size", 1),
                         Py.kw("openai_api_key", OPENAI_API_KEY)
                         );

@@ -1,0 +1,53 @@
+﻿@using Microsoft.Extensions.Options;
+@using PyProcessors;
+@using TestOpenAI.Helpers;
+@using TestOpenAI.Models;
+@implements IDisposable;
+<InputFile OnChange="@LoadFiles"></InputFile>
+<div>
+    @((MarkupString) processMsg)
+</div>
+@code {
+    [Inject] protected IWebHostEnvironment webHostEnvironment { get; set; } = null!;
+    [Inject] protected PdfProcessor pdfProcessor { get; set; } = null!;
+
+    [Parameter] public EventCallback<string?> OnIndexed { get; set; }
+
+    private string processMsg = String.Empty;
+    private async Task LoadFiles(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+
+        //var trustedFileNameForFileStorage = Path.ChangeExtension(Path.GetRandomFileName(),".pdf");
+        var documentSourceFolder = Utility.GetDocumentSourceFolder(webHostEnvironment);
+        var documentIndexDir = Utility.GetDocumentIndexFolder(webHostEnvironment);
+        //var path = Path.Combine(uploadDir, trustedFileNameForFileStorage);
+        var path = Path.Combine(documentSourceFolder, Path.GetFileName(file.Name));
+        await using FileStream fs = new(path, FileMode.Create);
+        await file.OpenReadStream(file.Size).CopyToAsync(fs);
+        fs.Flush();
+
+
+        //var pdfProcessor = new PdfProcessor(AOAI_KEY, AOAI_ENDPOINT, AOAI_DEPLOYMENTID_EMBEDDED);
+        pdfProcessor.OnProcess += async (sender, msg) =>
+        {
+            processMsg = msg;
+            await InvokeAsync(StateHasChanged);
+        };
+        pdfProcessor.OnCompleted += async (sender, success) =>
+        {
+            if (success)
+                processMsg = String.Empty;
+            else
+                processMsg = "<span class='text-danger'>Error indexing file</span>";
+            await InvokeAsync(StateHasChanged);
+        };
+        var indexFileName = pdfProcessor.ProcessPdf(path, documentIndexDir);
+        if(OnIndexed.HasDelegate)
+            await OnIndexed.InvokeAsync(indexFileName);
+    }
+    public void Dispose()
+    {
+        processMsg = String.Empty;
+    }
+}

@@ -1,5 +1,8 @@
+using JLBlazorComponents;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.Extensions.Options;
+using PyProcessors;
 using TestOpenAI.Data;
 using TestOpenAI.Models;
 
@@ -12,7 +15,19 @@ builder.Services.Configure<AOAISettings>(builder.Configuration.GetSection(nameof
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 //builder.Services.AddSingleton<WeatherForecastService>();
+builder.Services.AddJLBlazorComponents();
 
+builder.Services.AddScoped<PdfProcessor>((serviceProvider) =>
+{
+    var aoaiSettings = serviceProvider.GetService<IOptionsMonitor<AOAISettings>>()?.CurrentValue;
+    return new PdfProcessor(aoaiSettings?.AOAI_KEY, aoaiSettings?.AOAI_ENDPOINT, aoaiSettings?.AOAI_EMBEDDED_DEPLOYMENT_NAME);
+    
+});
+builder.Services.AddScoped<FAISSChatProcessor>((serviceProvider) =>
+{
+    var aoaiSettings = serviceProvider.GetService<IOptionsMonitor<AOAISettings>>()?.CurrentValue;
+    return new FAISSChatProcessor(aoaiSettings?.AOAI_KEY, aoaiSettings?.AOAI_ENDPOINT, aoaiSettings?.AOAI_CHAT_DEPLOYMENT_NAME, aoaiSettings?.AOAI_CHAT_DEPLOYMENT_MODEL, aoaiSettings?.AOAI_EMBEDDED_DEPLOYMENT_MODEL);
+});
 await PyProcessors.PySetup.Initialize((s) => { Console.WriteLine(s); });
 
 var app = builder.Build();

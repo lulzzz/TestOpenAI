@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace PyProcessors.Helpers
 {
-    internal static class Utility
+    public static class Utility
     {
         public static string CleanString(this string dirtyString)
         {

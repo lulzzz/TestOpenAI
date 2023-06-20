@@ -5,10 +5,10 @@
 @using PyProcessors;
 @using TestOpenAI.Models;
 <h3>Summarize</h3>
-<div class="d-flex justify-content-between">
+@*<div class="d-flex justify-content-between">
     <InputFile OnChange="@LoadFiles" />
     <span>@processMsg</span>
-</div>
+</div>*@
 <div class="mb-3">
     <textarea @bind="prompt" class="form-control shadow" rows="20"></textarea>
 </div>
@@ -40,9 +40,9 @@
     [Inject] protected IWebHostEnvironment webHostEnvironment { get; set; } = null!;
     string AOAI_ENDPOINT;
     string AOAI_KEY;
-    string AOAI_DEPLOYMENTID_TEXT;
-    string AOAI_DEPLOYMENTID_EMBEDDED;
-    string AOAI_DEPOYMENTID_CHAT_MODEL_NAME;
+    string AOAI_TEXT_DEPLOYMENT_NAME;
+    //string AOAI_DEPLOYMENTID_EMBEDDED;
+    //string AOAI_DEPOYMENTID_CHAT_MODEL_NAME;
     OpenAIClient openAIClient;
     string prompt;
     string promptResponse;
@@ -52,9 +52,9 @@
     {
         AOAI_ENDPOINT = aoaiSettings.CurrentValue.AOAI_ENDPOINT;// configuration.GetValue<string>("Chat:AOAI_ENDPOINT");
         AOAI_KEY = aoaiSettings.CurrentValue.AOAI_KEY;// configuration.GetValue<string>("Chat:AOAI_KEY");
-        AOAI_DEPLOYMENTID_TEXT = aoaiSettings.CurrentValue.AOAI_DEPLOYMENTID_TEXT;// configuration.GetValue<string>("Chat:AOAI_DEPLOYMENTID_TEXT");
-        AOAI_DEPLOYMENTID_EMBEDDED = aoaiSettings.CurrentValue.AOAI_DEPLOYMENTID_EMBEDDED;// configuration.GetValue<string>("Chat:AOAI_DEPLOYMENTID_EMBEDDED");
-        AOAI_DEPOYMENTID_CHAT_MODEL_NAME = aoaiSettings.CurrentValue.AOAI_DEPOYMENTID_CHAT_MODEL_NAME;
+        AOAI_TEXT_DEPLOYMENT_NAME = aoaiSettings.CurrentValue.AOAI_TEXT_DEPLOYMENT_NAME;// configuration.GetValue<string>("Chat:AOAI_DEPLOYMENTID_TEXT");
+        //AOAI_DEPLOYMENTID_EMBEDDED = aoaiSettings.CurrentValue.AOAI_DEPLOYMENTID_EMBEDDED;// configuration.GetValue<string>("Chat:AOAI_DEPLOYMENTID_EMBEDDED");
+        //AOAI_DEPOYMENTID_CHAT_MODEL_NAME = aoaiSettings.CurrentValue.AOAI_DEPOYMENTID_CHAT_MODEL_NAME;
 
         var endpoint = new Uri(AOAI_ENDPOINT);
         var credentials = new Azure.AzureKeyCredential(AOAI_KEY);
@@ -77,7 +77,7 @@
             };
         //Completions response = await openAIClient.GetCompletionsAsync(AOAI_DEPLOYMENTID_TEXT, completionsOptions);
 
-        Response<StreamingCompletions> responseStreaming = await openAIClient.GetCompletionsStreamingAsync(AOAI_DEPLOYMENTID_TEXT, completionsOptions);
+        Response<StreamingCompletions> responseStreaming = await openAIClient.GetCompletionsStreamingAsync(AOAI_TEXT_DEPLOYMENT_NAME, completionsOptions);
         using StreamingCompletions streamingCompletions = responseStreaming.Value;
 
         string reasonStop = "";
@@ -95,64 +95,40 @@
         loading = false;
     }
 
-    private async Task LoadFiles(InputFileChangeEventArgs e)
-    {
-        var file = e.File;
+    //private async Task LoadFiles(InputFileChangeEventArgs e)
+    //{
+    //    var file = e.File;
 
-        //var trustedFileNameForFileStorage = Path.ChangeExtension(Path.GetRandomFileName(),".pdf");
-        var uploadDir = Path.Combine(webHostEnvironment.ContentRootPath, "dbs","source");
-        if (!Directory.Exists(uploadDir))
-        {
-            Directory.CreateDirectory(uploadDir);
-        }
-        var indexDir = Path.Combine(webHostEnvironment.ContentRootPath, "dbs", "index");
-        //var path = Path.Combine(uploadDir, trustedFileNameForFileStorage);
-        var path = Path.Combine(uploadDir, Path.GetFileName(file.Name));
-        await using FileStream fs = new(path, FileMode.Create);
-        await file.OpenReadStream(file.Size).CopyToAsync(fs);
-        fs.Flush();
+    //    //var trustedFileNameForFileStorage = Path.ChangeExtension(Path.GetRandomFileName(),".pdf");
+    //    var uploadDir = Path.Combine(webHostEnvironment.ContentRootPath, "dbs","source");
+    //    if (!Directory.Exists(uploadDir))
+    //    {
+    //        Directory.CreateDirectory(uploadDir);
+    //    }
+    //    var indexDir = Path.Combine(webHostEnvironment.ContentRootPath, "dbs", "index");
+    //    //var path = Path.Combine(uploadDir, trustedFileNameForFileStorage);
+    //    var path = Path.Combine(uploadDir, Path.GetFileName(file.Name));
+    //    await using FileStream fs = new(path, FileMode.Create);
+    //    await file.OpenReadStream(file.Size).CopyToAsync(fs);
+    //    fs.Flush();
 
 
-        var pdfProcessor = new PdfProcessor(AOAI_KEY, AOAI_ENDPOINT, AOAI_DEPLOYMENTID_EMBEDDED);
-        pdfProcessor.OnProcess += async (sender, msg) =>
-        {
-            processMsg = msg;
-            await InvokeAsync(StateHasChanged);
-        };
-        pdfProcessor.OnCompleted += async (sender, success) =>
-        {
-            if (success)
-                processMsg = String.Empty;
-            else
-                processMsg = "Error indexing file";
-            await InvokeAsync(StateHasChanged);
-        };
-        var indexFileName = pdfProcessor.ProcessPdf(path,indexDir);
+    //    var pdfProcessor = new PdfProcessor(AOAI_KEY, AOAI_ENDPOINT, AOAI_DEPLOYMENTID_EMBEDDED);
+    //    pdfProcessor.OnProcess += async (sender, msg) =>
+    //    {
+    //        processMsg = msg;
+    //        await InvokeAsync(StateHasChanged);
+    //    };
+    //    pdfProcessor.OnCompleted += async (sender, success) =>
+    //    {
+    //        if (success)
+    //            processMsg = String.Empty;
+    //        else
+    //            processMsg = "Error indexing file";
+    //        await InvokeAsync(StateHasChanged);
+    //    };
+    //    var indexFileName = pdfProcessor.ProcessPdf(path,indexDir);
 
-        //isLoading = true;
-        //loadedFiles.Clear();
-
-        //foreach (var file in e.GetMultipleFiles(maxAllowedFiles))
-        //{
-        //    try
-        //    {
-        //        loadedFiles.Add(file);
-
-        //        var trustedFileNameForFileStorage = Path.GetRandomFileName();
-        //        var path = Path.Combine(Environment.ContentRootPath,
-        //                Environment.EnvironmentName, "unsafe_uploads",
-        //                trustedFileNameForFileStorage);
-
-        //        await using FileStream fs = new(path, FileMode.Create);
-        //        await file.OpenReadStream(maxFileSize).CopyToAsync(fs);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Logger.LogError("File: {Filename} Error: {Error}",
-        //            file.Name, ex.Message);
-        //    }
-        //}
-
-        //isLoading = false;
-    }
+        
+    //}
 }

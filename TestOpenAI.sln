@@ -5,7 +5,7 @@ VisualStudioVersion = 17.6.33712.159
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestOpenAI", "TestOpenAI\TestOpenAI.csproj", "{0D5F6803-0D76-414F-B535-8971DEB46B72}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PyProcessors", "PyProcessors\PyProcessors.csproj", "{107A92D9-DCEC-45A3-B0AF-E068ED999B54}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PyProcessors", "PyProcessors\PyProcessors.csproj", "{107A92D9-DCEC-45A3-B0AF-E068ED999B54}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

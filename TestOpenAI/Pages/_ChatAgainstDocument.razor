@@ -29,10 +29,13 @@
             }
         </div>
     </div>
-    <div class="mt-4 border border-1 input-group shadow">
-        <textarea class="form-control" rows="3" @bind="userInput" id="floatingInput" placeholder="Ask me something."></textarea>
-        <button class="btn btn-outline-secondary" type="button" @onclick="DoChat"><i class="oi oi-arrow-circle-right"></i></button>
-    </div>
+    @if (isReady)
+    {
+        <div class="mt-4 border border-1 input-group shadow">
+            <textarea class="form-control" rows="3" @bind="userInput" id="floatingInput" placeholder="Ask me something."></textarea>
+            <button class="btn btn-outline-secondary" type="button" @onclick="DoChat"><i class="oi oi-arrow-circle-right"></i></button>
+        </div>
+    }
 }
 
 @code {
@@ -44,6 +47,7 @@
     private string selectedIndex = String.Empty;
     private Dictionary<string, string> dict = new();
     List<ChatMessage> messages = new();
+    protected bool isReady { get; set; } = false;
     dynamic? qa;
     protected string processMessage { get; set; } = string.Empty;
     protected override void OnInitialized()
@@ -60,7 +64,7 @@
         };
         LoadIndexedDocuments();
     }
-    
+
     private async Task ShowUploadDocument()
     {
         ModalParameters modalParameters = new ModalParameters();
@@ -97,6 +101,8 @@
         }
         messages.Clear();
         messages.Add(new ChatMessage(ChatRole.System, "Hi, how can I help you today with this document?"));
+        isReady = true;
+        StateHasChanged();
     }
     private async Task DoChat()
     {

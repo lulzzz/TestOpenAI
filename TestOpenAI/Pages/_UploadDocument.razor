@@ -14,6 +14,37 @@
     [Parameter] public EventCallback<string?> OnIndexed { get; set; }
 
     private string processMsg = String.Empty;
+    protected override void OnInitialized()
+    {
+        //pdfProcessor.OnProcess += async (sender, msg) =>
+        //{
+        //    processMsg = msg;
+        //    await InvokeAsync(StateHasChanged);
+        //};
+        pdfProcessor.OnProcess += HandleOnProcessed;
+        //pdfProcessor.OnCompleted += async (sender, success) =>
+        //{
+        //    if (success)
+        //        processMsg = String.Empty;
+        //    else
+        //        processMsg = "<span class='text-danger'>Error indexing file</span>";
+        //    await InvokeAsync(StateHasChanged);
+        //};
+        pdfProcessor.OnCompleted += HandleOnCompleted;
+    }
+    private async void HandleOnProcessed(object? sender, string? msg)
+    {
+        processMsg = msg;
+        await InvokeAsync(StateHasChanged);
+    }
+    private async void HandleOnCompleted(object? sender, bool success)
+    {
+        if (success)
+            processMsg = String.Empty;
+        else
+            processMsg = "<span class='text-danger'>Error indexing file</span>";
+        await InvokeAsync(StateHasChanged);
+    }
     private async Task LoadFiles(InputFileChangeEventArgs e)
     {
         var file = e.File;
@@ -29,19 +60,19 @@
 
 
         //var pdfProcessor = new PdfProcessor(AOAI_KEY, AOAI_ENDPOINT, AOAI_DEPLOYMENTID_EMBEDDED);
-        pdfProcessor.OnProcess += async (sender, msg) =>
-        {
-            processMsg = msg;
-            await InvokeAsync(StateHasChanged);
-        };
-        pdfProcessor.OnCompleted += async (sender, success) =>
-        {
-            if (success)
-                processMsg = String.Empty;
-            else
-                processMsg = "<span class='text-danger'>Error indexing file</span>";
-            await InvokeAsync(StateHasChanged);
-        };
+        //pdfProcessor.OnProcess += async (sender, msg) =>
+        //{
+        //    processMsg = msg;
+        //    await InvokeAsync(StateHasChanged);
+        //};
+        //pdfProcessor.OnCompleted += async (sender, success) =>
+        //{
+        //    if (success)
+        //        processMsg = String.Empty;
+        //    else
+        //        processMsg = "<span class='text-danger'>Error indexing file</span>";
+        //    await InvokeAsync(StateHasChanged);
+        //};
         var indexFileName = pdfProcessor.ProcessPdf(path, documentIndexDir);
         if(OnIndexed.HasDelegate)
             await OnIndexed.InvokeAsync(indexFileName);
@@ -49,5 +80,7 @@
     public void Dispose()
     {
         processMsg = String.Empty;
+        pdfProcessor.OnProcess -= HandleOnProcessed;
+        pdfProcessor.OnCompleted -= HandleOnCompleted;
     }
 }

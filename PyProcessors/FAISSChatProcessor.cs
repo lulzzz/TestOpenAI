@@ -88,6 +88,7 @@ namespace PyProcessors
                         dynamic qa = chains.RetrievalQA.from_chain_type(
                             Py.kw("llm", llm),
                             Py.kw("chain_type", "stuff"),
+                            //Py.kw("chain_type","refine"),
                             Py.kw("retriever", retriever),
                             Py.kw("return_source_documents", false.ToPython())
                             );

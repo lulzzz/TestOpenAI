@@ -16,7 +16,7 @@
     </div>
 </div>
 <div class="alert alert-primary" role="alert">
-    @processMessage
+    @((MarkupString)processMessage)
 </div>
 @if (!string.IsNullOrWhiteSpace(selectedIndex))
 {
@@ -48,16 +48,16 @@
     protected string processMessage { get; set; } = string.Empty;
     protected override void OnInitialized()
     {
-        //faissChatProcessor.OnProcessStarted += async (sender, str) =>
-        //{
-        //    processMessage = str;
-        //    await InvokeAsync(StateHasChanged);
-        //};
-        //faissChatProcessor.OnProcessCompleted += async (sender, success) =>
-        //{
-        //    processMessage = success ? "" : "<div>Error</div>";
-        //    await InvokeAsync(StateHasChanged);
-        //};
+        faissChatProcessor.OnProcessStarted += async (sender, str) =>
+        {
+            processMessage = str;
+            await InvokeAsync(StateHasChanged);
+        };
+        faissChatProcessor.OnProcessCompleted += async (sender, success) =>
+        {
+            processMessage = success ? "" : "<div>Error</div>";
+            await InvokeAsync(StateHasChanged);
+        };
         LoadIndexedDocuments();
     }
     

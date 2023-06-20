@@ -40,11 +40,11 @@ namespace PyProcessors
             //GILState = Py.GIL();
             //scope = Py.CreateScope();
         }
-        private dynamic GetChatModule(PyModule scope, string faissIndexModelFilePath)
+        public dynamic GetChatModule(string faissIndexModelFilePath)
         {
-            //using(Py.GIL())
+            using(Py.GIL())
             {
-                //using(var scope = Py.CreateScope())
+                using(var scope = Py.CreateScope())
                 {
                     try
                     {
@@ -104,19 +104,26 @@ namespace PyProcessors
             
             
         }
-        public dynamic AskQuestion(dynamic qaChat, string question)
+        public string? AskQuestion(dynamic qaChat, string question)
         {
-            //using (Py.GIL())
+            using (Py.GIL())
             {
-                //using var scope = Py.CreateScope();
+                using var scope = Py.CreateScope();
+                dynamic openai = scope.Import("openai");
+                openai.api_type = "azure";
+                openai.api_version = OPENAI_DEPLOYMENT_VERSION;
+                openai.api_base = OPENAI_DEPLOYMENT_ENDPOINT;
+                openai.api_key = OPENAI_API_KEY;
                 //var result = qaChat({ "query": question});
                 try
                 {
                     OnProcessStarted?.Invoke(this, "Thinking...");
                     //var result = qaChat(Py.kw("query", question));
                     dynamic result = qaChat(Py.kw("inputs", Py.kw("query", question)));
-                    return result;
-                    
+                    //return result;
+                    var answer = result["result"];
+                    var pyString = new PyString(answer);
+                    return pyString.ToString();
                     //return result;
                     OnProcessCompleted?.Invoke(this, true);
                 }
@@ -129,19 +136,19 @@ namespace PyProcessors
             }
                 
         }
-        public string? AskAQuestion(string faissIndexModelFilePath, string question)
-        {
-            using (Py.GIL())
-            {
-                using var scope = Py.CreateScope();
+        //public string? AskAQuestion(string faissIndexModelFilePath, string question)
+        //{
+        //    using (Py.GIL())
+        //    {
+        //        using var scope = Py.CreateScope();
 
-                var qa = GetChatModule(scope, faissIndexModelFilePath);
-                var result = AskQuestion(qa, question);
-                var answer = result["result"];
-                var pyString = new PyString(answer);
-                return pyString.ToString();
-            }
-        }
+        //        var qa = GetChatModule(scope, faissIndexModelFilePath);
+        //        var result = AskQuestion(qa, question);
+        //        var answer = result["result"];
+        //        var pyString = new PyString(answer);
+        //        return pyString.ToString();
+        //    }
+        //}
         public void Dispose()
         {
             //scope?.Dispose();

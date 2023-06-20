@@ -15,8 +15,8 @@
         <button class="btn btn-primary text-nowrap" role="button" @onclick="ShowUploadDocument">Upload new document</button>
     </div>
 </div>
-<div class="alert alert-primary">
-    @((MarkupString)processMessage)
+<div class="alert alert-primary" role="alert">
+    @processMessage
 </div>
 @if (!string.IsNullOrWhiteSpace(selectedIndex))
 {
@@ -45,22 +45,22 @@
     private Dictionary<string, string> dict = new();
     List<ChatMessage> messages = new();
     dynamic? qa;
-    string processMessage = string.Empty;
+    protected string processMessage { get; set; } = string.Empty;
     protected override void OnInitialized()
     {
-        faissChatProcessor.OnProcessStarted += (sender, str) =>
-        {
-            processMessage = str;
-            StateHasChanged();
-        };
-        faissChatProcessor.OnProcessCompleted += (sender, success) =>
-        {
-            processMessage = success ? "" : "<div>Error</div>";
-            StateHasChanged();
-        };
+        //faissChatProcessor.OnProcessStarted += async (sender, str) =>
+        //{
+        //    processMessage = str;
+        //    await InvokeAsync(StateHasChanged);
+        //};
+        //faissChatProcessor.OnProcessCompleted += async (sender, success) =>
+        //{
+        //    processMessage = success ? "" : "<div>Error</div>";
+        //    await InvokeAsync(StateHasChanged);
+        //};
         LoadIndexedDocuments();
     }
-
+    
     private async Task ShowUploadDocument()
     {
         ModalParameters modalParameters = new ModalParameters();
@@ -91,10 +91,10 @@
     {
         qa = null;
         selectedIndex = args.Value?.ToString();
-        //if (!string.IsNullOrWhiteSpace(indexName))
-        //{
-        //    qa = faissChatProcessor.GetChatModule(indexName);
-        //}
+        if (!string.IsNullOrWhiteSpace(selectedIndex))
+        {
+            qa = faissChatProcessor.GetChatModule(selectedIndex);
+        }
         messages.Clear();
         messages.Add(new ChatMessage(ChatRole.System, "Hi, how can I help you today with this document?"));
     }
@@ -104,8 +104,8 @@
         {
             messages.Add(new ChatMessage(ChatRole.User, userInput));
             await InvokeAsync(StateHasChanged);
-            //var result = faissChatProcessor.AskQuestion(qa, userInput);
-            var result = faissChatProcessor.AskAQuestion(selectedIndex, userInput);
+            var result = faissChatProcessor.AskQuestion(qa, userInput);
+            //var result = faissChatProcessor.AskAQuestion(selectedIndex, userInput);
             messages.Add(new ChatMessage(ChatRole.Assistant, result??"No result"));
             userInput = String.Empty;
             await InvokeAsync(StateHasChanged);

@@ -40,6 +40,8 @@ namespace PyProcessors
                 }
             }
             PythonEngine.Initialize();
+            PythonEngine.BeginAllowThreads();
+
         }
 
     }

@@ -61,7 +61,7 @@ namespace PyProcessors {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to openai, langchain.
+        ///   Looks up a localized string similar to openai, langchain, pypdf, tiktoken, faiss-cpu.
         /// </summary>
         internal static string libraries {
             get {

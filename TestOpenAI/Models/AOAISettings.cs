@@ -7,5 +7,7 @@
         public string? AOAI_DEPLOYMENTID_TEXT { get; set; }
         public string? AOAI_DEPLOYMENTID_CHAT { get; set; }
         public string? AOAI_DEPLOYMENTID_EMBEDDED { get; set; }
+        public string? AOAI_DEPOYMENTID_CHAT_MODEL_NAME { get; set; }
+
     }
 }

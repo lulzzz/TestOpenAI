@@ -2,6 +2,7 @@
 @using PyProcessors;
 @using TestOpenAI.Helpers;
 @using Azure.AI.OpenAI;
+@implements IDisposable;
 <h3>Chat Against Document</h3>
 <div class="card shadow">
     <div class="card-body d-flex justify-content-between">
@@ -91,10 +92,17 @@
             }
         }
     }
-    private void OnSelectChanged(ChangeEventArgs args)
+    private async void OnSelectChanged(ChangeEventArgs args)
     {
+        if (qa != null)
+        {
+            ((Python.Runtime.PyObject)qa).Dispose();
+        }
         qa = null;
         selectedIndex = args.Value?.ToString();
+        processMessage = "Loading chat module for this document";
+        //await InvokeAsync(StateHasChanged);
+        await Task.Delay(1);
         if (!string.IsNullOrWhiteSpace(selectedIndex))
         {
             qa = faissChatProcessor.GetChatModule(selectedIndex);
@@ -102,7 +110,9 @@
         messages.Clear();
         messages.Add(new ChatMessage(ChatRole.System, "Hi, how can I help you today with this document?"));
         isReady = true;
-        StateHasChanged();
+        processMessage = "";
+        await InvokeAsync(StateHasChanged);
+        await Task.Delay(1);
     }
     private async Task DoChat()
     {
@@ -117,5 +127,14 @@
             await InvokeAsync(StateHasChanged);
 
         }
+    }
+    public void Dispose()
+    {
+        if (qa != null)
+        {
+            qa.Dispose();
+            //((Python.Runtime.PyObject)qa).Dispose();
+        }
+        faissChatProcessor.Dispose();
     }
 }

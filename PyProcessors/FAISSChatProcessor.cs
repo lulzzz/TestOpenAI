@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Security.AccessControl;
 using System.Text;
 using System.Threading.Tasks;
 using static System.Formats.Asn1.AsnWriter;
@@ -42,13 +43,16 @@ namespace PyProcessors
         }
         public dynamic GetChatModule(string faissIndexModelFilePath)
         {
-            using(Py.GIL())
+            //OnProcessStarted?.Invoke(this, "Loading modules");
+            dynamic qa = null;
+            var success = false;
+            using (Py.GIL())
             {
                 using(var scope = Py.CreateScope())
                 {
                     try
                     {
-                        OnProcessStarted?.Invoke(this, "Loading modules");
+                        //OnProcessStarted?.Invoke(this, "Loading modules");
                         dynamic vectorstores = scope.Import("langchain.vectorstores");
                         dynamic chains = scope.Import("langchain.chains");
                         dynamic question_answering = scope.Import("langchain.chains.question_answering");
@@ -85,25 +89,28 @@ namespace PyProcessors
                             Py.kw("search_kwargs",Py.kw("k",2))
                             );
                         //use the vector store as a retriever
-                        dynamic qa = chains.RetrievalQA.from_chain_type(
+                        qa = chains.RetrievalQA.from_chain_type(
                             Py.kw("llm", llm),
                             Py.kw("chain_type", "stuff"),
                             //Py.kw("chain_type","refine"),
                             Py.kw("retriever", retriever),
                             Py.kw("return_source_documents", false.ToPython())
                             );
-                        OnProcessCompleted?.Invoke(this, true);
-                        return qa;
+                        //OnProcessCompleted?.Invoke(this, true);
+                        success = true;
+                        //return qa;
                     }
                     catch (Exception ex)
                     {
-                        OnProcessCompleted?.Invoke(this, false);
-                        throw;
+                        //OnProcessCompleted?.Invoke(this, false);
+                        //throw;
+                        success = false;
+                        //return null;
                     }
                 }
             }
-            
-            
+            //OnProcessCompleted?.Invoke(this, success);
+            return qa;
         }
         public string? AskQuestion(dynamic qaChat, string question)
         {

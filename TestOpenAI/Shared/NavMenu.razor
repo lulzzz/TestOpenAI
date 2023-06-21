@@ -1,4 +1,6 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿@using TestOpenAI.Helpers;
+@using TestOpenAI.Pages;
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="">TestOpenAI</a>
         <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
@@ -9,31 +11,41 @@
 
 <div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
     <nav class="flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="oi oi-home" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
-        @*<div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="oi oi-plus" aria-hidden="true"></span> Counter
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="fetchdata">
-                <span class="oi oi-list-rich" aria-hidden="true"></span> Fetch data
-            </NavLink>
-        </div>*@
+        @foreach (var item in dictApps)
+        {
+            <div class="nav-item px-3">
+                <a class="nav-link @(appData.AppName == item.Value ? "active":"")" href="#" @onclick="@(()=>{ChangeApp(item.Value);})">@item.Key</a>
+            </div>
+        }
     </nav>
 </div>
 
 @code {
+    [Inject] protected AppData appData{ get; set; }
     private bool collapseNavMenu = true;
 
     private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
-
+    Dictionary<string, string> dictApps = new();
+    protected override void OnInitialized()
+    {
+        dictApps.Add("Summarize", nameof(_Summarize));
+        dictApps.Add("Chat", nameof(_Chat));
+        dictApps.Add("FAISS Search", nameof(_ChatAgainstDocument));
+    }
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            appData.AppName = dictApps.FirstOrDefault().Value;
+            StateHasChanged();
+        }
+    }
     private void ToggleNavMenu()
     {
         collapseNavMenu = !collapseNavMenu;
+    }
+    private void ChangeApp(string appName)
+    {
+        appData.AppName = appName;
     }
 }

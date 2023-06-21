@@ -1,10 +1,11 @@
 ﻿@page "/"
 @using Azure.AI.OpenAI;
 @using Azure;
-
+@using TestOpenAI.Helpers;
+@implements IDisposable;
 <PageTitle>Index</PageTitle>
 
-<p>
+@*<p>
     <label>
         Select your chat type:
         <select @onchange="OnDropdownChange" class="form-select">
@@ -14,7 +15,7 @@
             <option value="@nameof(_ChatAgainstDocument)">Chat against Document</option>
         </select>
     </label>
-</p>
+</p>*@
 @if (selectedType is not null)
 {
     <div class="border border-primary my-1 p-1">
@@ -25,11 +26,32 @@
 
 
 @code{
-    
+    [Inject] protected AppData appData { get; set; } = null!;
     private Type? selectedType;
+
+    protected override void OnInitialized()
+    {
+        appData.AppNameChanged += OnAppNameChanged;
+        if (!string.IsNullOrWhiteSpace(appData.AppName))
+        {
+            selectedType = Type.GetType($"TestOpenAI.Pages.{appData.AppName}");
+        }
+    }
+
     private void OnDropdownChange(ChangeEventArgs e)
     {
         selectedType = e.Value?.ToString()?.Length > 0 ?
             Type.GetType($"TestOpenAI.Pages.{e.Value}") : null;
+    }
+
+    private void OnAppNameChanged(object? sender, string appName)
+    {
+        selectedType = Type.GetType($"TestOpenAI.Pages.{appName}");
+        StateHasChanged();
+    }  
+
+    public void Dispose()
+    {
+        appData.AppNameChanged -= OnAppNameChanged;
     }
 }

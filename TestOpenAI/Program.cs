@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.Options;
 using PyProcessors;
 using TestOpenAI.Data;
+using TestOpenAI.Helpers;
 using TestOpenAI.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,6 +17,7 @@ builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 //builder.Services.AddSingleton<WeatherForecastService>();
 builder.Services.AddJLBlazorComponents();
+builder.Services.AddScoped<AppData>();
 
 builder.Services.AddScoped<PdfProcessor>((serviceProvider) =>
 {

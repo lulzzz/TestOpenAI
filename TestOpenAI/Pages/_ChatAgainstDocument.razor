@@ -1,5 +1,6 @@
 ﻿@using JLBlazorComponents.Services;
 @using PyProcessors;
+@using Python.Runtime;
 @using TestOpenAI.Helpers;
 @using Azure.AI.OpenAI;
 @implements IDisposable;
@@ -94,10 +95,7 @@
     }
     private async void OnSelectChanged(ChangeEventArgs args)
     {
-        if (qa != null)
-        {
-            ((Python.Runtime.PyObject)qa).Dispose();
-        }
+        DisposeQA();
         qa = null;
         selectedIndex = args.Value?.ToString();
         processMessage = "Loading chat module for this document";
@@ -128,13 +126,21 @@
 
         }
     }
-    public void Dispose()
+    private void DisposeQA()
     {
         if (qa != null)
         {
-            qa.Dispose();
+            using (Py.GIL())
+            {
+                qa.Dispose();
+            }
+
             //((Python.Runtime.PyObject)qa).Dispose();
         }
+    }
+    public void Dispose()
+    {
+        DisposeQA();
         faissChatProcessor.Dispose();
     }
 }

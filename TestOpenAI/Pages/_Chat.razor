@@ -6,7 +6,7 @@
 @*<h3>Chat</h3>*@
 <div class="card shadow">
     <div class="card-header">Chat</div>
-    <div class="card-body" style="height:400px; overflow-y:auto;">
+    <div class="card-body" style="height:400px; overflow-y:auto;" @ref="bodyMessages">
     @foreach(var msg in completionOptions?.Messages??new List<ChatMessage>())
     {
         @*<div class="card">
@@ -27,8 +27,9 @@
 </div>
 @*<button type="button" class="btn btn-primary" @onclick="DoChat">Send</button>*@
 @code {
-    [Inject] protected IConfiguration configuration { get; set; }
-    [Inject] protected IOptionsMonitor<AOAISettings> aoaiSettings{ get; set; }
+    [Inject] protected IConfiguration configuration { get; set; } = null!;
+    [Inject] protected IOptionsMonitor<AOAISettings> aoaiSettings { get; set; } = null!;
+    [Inject] protected IJSRuntime jsRuntime { get; set; } = null!;
     string AOAI_ENDPOINT;
     string AOAI_KEY;
     string AOAI_CHAT_DEPLOYMENT_NAME;
@@ -37,6 +38,7 @@
     string promptResponse;
     ChatCompletionsOptions completionOptions;
     string userInput;
+    ElementReference bodyMessages;
     protected override async Task OnInitializedAsync()
     {
         AOAI_ENDPOINT = aoaiSettings.CurrentValue.AOAI_ENDPOINT;// configuration.GetValue<string>("Chat:AOAI_ENDPOINT");
@@ -80,10 +82,26 @@
             completionOptions.Messages.Add(new ChatMessage(ChatRole.User, userInput));
             var chatThinking = new ChatMessage(ChatRole.Assistant, "Thinking...");
             completionOptions.Messages.Add(chatThinking);
-            ChatCompletions response = await openAIClient.GetChatCompletionsAsync(AOAI_CHAT_DEPLOYMENT_NAME, completionOptions);
 
-            //completionOptions.Messages.Add(response.Choices[0].Message);
-            completionOptions.Messages[completionOptions.Messages.IndexOf(chatThinking)] = response.Choices[0].Message;
+            //ChatCompletions response = await openAIClient.GetChatCompletionsAsync(AOAI_CHAT_DEPLOYMENT_NAME, completionOptions);
+            ////completionOptions.Messages.Add(response.Choices[0].Message);
+            //completionOptions.Messages[completionOptions.Messages.IndexOf(chatThinking)] = response.Choices[0].Message;
+
+            var idx = completionOptions.Messages.IndexOf(chatThinking);
+            var resp = await openAIClient.GetChatCompletionsStreamingAsync(AOAI_CHAT_DEPLOYMENT_NAME, completionOptions);
+            await foreach(var choice in resp.Value.GetChoicesStreaming())
+            {
+
+                ChatMessage chatMessage = null;
+                StringBuilder sb = new StringBuilder();
+                await foreach(var msg in choice.GetMessageStreaming())
+                {
+                    sb.Append(msg.Content);
+                    completionOptions.Messages[idx] = new ChatMessage(msg.Role,sb.ToString());
+                    await InvokeAsync(StateHasChanged);
+                    await jsRuntime.InvokeVoidAsync("scrollToBottom", bodyMessages);
+                }
+            }
 
             userInput = String.Empty;
         }

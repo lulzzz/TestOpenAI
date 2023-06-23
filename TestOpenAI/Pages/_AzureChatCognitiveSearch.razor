@@ -1,0 +1,68 @@
+﻿@using Azure.AI.OpenAI;
+@using TestOpenAI.Services;
+@using Microsoft.Extensions.Options;
+@using TestOpenAI.Models;
+
+<h3>Search Employee Handbook and Benefits</h3>
+
+<div class="alert alert-primary" role="alert">
+    @((MarkupString)processMessage)
+</div>
+<div class="card shadow">
+    <div class="card-header">Chat</div>
+    <div class="card-body" style="height:400px; overflow-y:auto;">
+        @foreach (var msg in azCognitiveSearch.ChatMessages ?? new List<ChatMessage>())
+        {
+            <_ChatMessage chatMessage="@msg" />
+        }
+    </div>
+</div>
+@if (isReady)
+{
+    <div class="mt-4 border border-1 input-group shadow">
+        <textarea class="form-control" rows="3" @bind="userInput" id="floatingInput" placeholder="Ask me something."></textarea>
+        <button class="btn btn-outline-secondary" type="button" @onclick="DoChat"><i class="oi oi-arrow-circle-right"></i></button>
+    </div>
+}
+
+@code {
+    [Inject] protected IOptionsMonitor<AOAISettings> aoaiSettings { get; set; }
+    [Inject] protected AZChatCognitiveService azCognitiveSearch { get; set; } = null!;
+    [Inject] protected IConfiguration configuration { get; set; } = null!;
+    protected string processMessage { get; set; } = string.Empty;
+    bool isReady;
+    string? userInput;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var endPoint = configuration.GetValue<string>("AZCognitiveSettings:ENDPOINT");
+        var queryKey = configuration.GetValue<string>("AZCognitiveSettings:QUERY_KEY");
+        var adminKey = configuration.GetValue<string>("AZCognitiveSettings:ADMIN_KEY");
+        var indexName = configuration.GetValue<string>("AZCognitiveSettings:INDEX_NAME");
+        isReady = true;
+        processMessage = "";
+        var currentAOAISettings = aoaiSettings.CurrentValue;
+        azCognitiveSearch.Initialize(currentAOAISettings.AOAI_ENDPOINT, currentAOAISettings.AOAI_CHAT_DEPLOYMENT_NAME, currentAOAISettings.AOAI_KEY, currentAOAISettings.AOAI_VERSION,
+            endPoint, adminKey, indexName
+        );
+
+        await InvokeAsync(StateHasChanged);
+        await Task.Delay(1);
+    }
+    private async Task DoChat()
+    {
+        if (!string.IsNullOrWhiteSpace(userInput))
+        {
+            //messages.Add(new ChatMessage(ChatRole.User, userInput));
+            //await InvokeAsync(StateHasChanged);
+            //var result = azCognitiveSearch.AskQuestion(vectorStore, userInput);
+            ////var result = faissChatProcessor.AskAQuestion(selectedIndex, userInput);
+            //messages.Add(new ChatMessage(ChatRole.Assistant, result ?? "No result"));
+            await azCognitiveSearch.DoChat(userInput);
+            userInput = String.Empty;
+            await InvokeAsync(StateHasChanged);
+            await Task.Delay(1);
+
+        }
+    }
+}

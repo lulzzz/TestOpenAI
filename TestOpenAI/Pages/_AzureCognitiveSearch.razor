@@ -1,0 +1,105 @@
+﻿@using PyProcessors;
+@using Python.Runtime;
+@using Azure.AI.OpenAI;
+@implements IDisposable;
+<h3>Search Employee Handbook and Benefits</h3>
+
+@*<div class="card shadow mb-3">
+    <div class="card-body d-flex justify-content-between">
+        <select class="form-select" @onchange="OnSelectChanged">
+            <option value="" selected="@(selectedIndex == String.Empty)">-- Select document --</option>
+            @foreach (var item in dict.OrderBy(x => x.Key))
+            {
+                <option value="@item.Value" selected="@(item.Value == selectedIndex)">@item.Key</option>
+            }
+        </select>
+        <button class="btn btn-primary text-nowrap" role="button" @onclick="ShowUploadDocument">Upload new document</button>
+    </div>
+</div>*@
+<div class="alert alert-primary" role="alert">
+    @((MarkupString)processMessage)
+</div>
+<div class="card shadow">
+    <div class="card-header">Chat</div>
+    <div class="card-body" style="height:400px; overflow-y:auto;">
+        @foreach (var msg in messages ?? new List<ChatMessage>())
+        {
+            <_ChatMessage chatMessage="@msg" />
+        }
+    </div>
+</div>
+@if (isReady)
+{
+    <div class="mt-4 border border-1 input-group shadow">
+        <textarea class="form-control" rows="3" @bind="userInput" id="floatingInput" placeholder="Ask me something."></textarea>
+        <button class="btn btn-outline-secondary" type="button" @onclick="DoChat"><i class="oi oi-arrow-circle-right"></i></button>
+    </div>
+}
+
+@code {
+    [Inject] protected AZCognitiveSearch azCognitiveSearch { get; set; } = null!;
+    [Inject] protected IConfiguration configuration { get; set; } = null!;
+
+    protected string processMessage { get; set; } = string.Empty;
+    dynamic? vectorStore;
+    string? userInput;
+    List<ChatMessage> messages = new();
+    bool isReady = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        azCognitiveSearch.OnProcessStarted += async (sender, str) =>
+        {
+            processMessage = str;
+            await Task.Delay(1);
+            await InvokeAsync(StateHasChanged);
+        };
+        azCognitiveSearch.OnProcessCompleted += async (sender, success) =>
+        {
+            processMessage = success ? "" : "<div>Error</div>";
+            await Task.Delay(1);
+            await InvokeAsync(StateHasChanged);
+        };
+        var endPoint = configuration.GetValue<string>("AZCognitiveSettings:ENDPOINT");
+        var queryKey = configuration.GetValue<string>("AZCognitiveSettings:QUERY_KEY");
+        var indexName = configuration.GetValue<string>("AZCognitiveSettings:INDEX_NAME");
+        vectorStore = azCognitiveSearch.GetChatModule(endPoint, queryKey, indexName);
+        messages.Clear();
+        messages.Add(new ChatMessage(ChatRole.System, "Hi, how can I help you today with the employee handbook and benefits supplement?"));
+        isReady = true;
+        processMessage = "";
+        await InvokeAsync(StateHasChanged);
+        await Task.Delay(1);
+    }
+    private async Task DoChat()
+    {
+        if (!string.IsNullOrWhiteSpace(userInput))
+        {
+            messages.Add(new ChatMessage(ChatRole.User, userInput));
+            await InvokeAsync(StateHasChanged);
+            var result = azCognitiveSearch.AskQuestion(vectorStore, userInput);
+            //var result = faissChatProcessor.AskAQuestion(selectedIndex, userInput);
+            messages.Add(new ChatMessage(ChatRole.Assistant, result ?? "No result"));
+            userInput = String.Empty;
+            await InvokeAsync(StateHasChanged);
+            await Task.Delay(1);
+
+        }
+    }
+    private void DisposeVectorStore()
+    {
+        if (vectorStore != null)
+        {
+            using (Py.GIL())
+            {
+                vectorStore.Dispose();
+            }
+
+            //((Python.Runtime.PyObject)qa).Dispose();
+        }
+    }
+    public void Dispose()
+    {
+        DisposeVectorStore();
+    }
+}

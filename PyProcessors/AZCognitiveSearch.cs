@@ -1,17 +1,19 @@
 ﻿using Python.Runtime;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using System.Security.AccessControl;
 using System.Text;
 using System.Threading.Tasks;
-using static System.Formats.Asn1.AsnWriter;
 
 namespace PyProcessors
 {
-    public class FAISSChatProcessor : IDisposable
+    public class AZCognitiveSearch
     {
+        public EventHandler<string>? OnProcessStarted { get; set; }
+        public EventHandler<bool>? OnProcessCompleted { get; set; }
+
+
         string OPENAI_API_KEY = String.Empty;
         string OPENAI_DEPLOYMENT_ENDPOINT = String.Empty;
         string OPENAI_DEPLOYMENT_NAME = String.Empty;
@@ -19,41 +21,42 @@ namespace PyProcessors
         string OPENAI_DEPLOYMENT_VERSION = String.Empty;
         string OPENAI_MODEL_NAME = String.Empty;
 
-        //Py.GILState GILState;
-        //PyModule scope;
 
-        public EventHandler<string> OnProcessStarted { get; set; }
-        public EventHandler<bool> OnProcessCompleted { get; set; }
-        public FAISSChatProcessor(string? apiKey, string? azureApiEndpoint, string? chatDeploymentName, string? chatModelName, string? embeddingModelName,  string azureApiVersion = "2023-05-15") 
+        public AZCognitiveSearch(string? apiKey, string? azureApiEndpoint, string? chatDeploymentName, string? chatModelName, string? embeddingModelName,
+            string azureApiVersion = "2023-05-15") 
         {
             if (String.IsNullOrWhiteSpace(apiKey)) throw new ArgumentNullException(nameof(apiKey));
             if (String.IsNullOrWhiteSpace(azureApiEndpoint)) throw new ArgumentNullException(nameof(azureApiEndpoint));
             if (String.IsNullOrWhiteSpace(azureApiVersion)) throw new ArgumentNullException(nameof(azureApiVersion));
             if (String.IsNullOrWhiteSpace(chatDeploymentName)) throw new ArgumentNullException(nameof(chatDeploymentName));
-            if(String.IsNullOrWhiteSpace(chatModelName)) throw new ArgumentNullException(nameof(chatModelName));
+            if (String.IsNullOrWhiteSpace(chatModelName)) throw new ArgumentNullException(nameof(chatModelName));
+
+            
 
             OPENAI_API_KEY = apiKey;
             OPENAI_DEPLOYMENT_ENDPOINT = azureApiEndpoint;
             OPENAI_DEPLOYMENT_VERSION = azureApiVersion;
-            OPENAI_DEPLOYMENT_NAME=chatDeploymentName;
+            OPENAI_DEPLOYMENT_NAME = chatDeploymentName;
             OPENAI_MODEL_NAME = chatModelName;
             OPENAI_EMBEDDING_MODEL_NAME = embeddingModelName;
-            //GILState = Py.GIL();
-            //scope = Py.CreateScope();
+
         }
-        public dynamic GetChatModule(string faissIndexModelFilePath)
+        public dynamic GetChatModule(string azSearchEndpoint, string azSearchQueryKey, string azSearchIndexName)
         {
-            //OnProcessStarted?.Invoke(this, "Loading modules");
-            dynamic qa = null;
+            if (String.IsNullOrWhiteSpace(azSearchEndpoint)) throw new ArgumentNullException(nameof(azSearchEndpoint));
+            if (String.IsNullOrWhiteSpace(azSearchQueryKey)) throw new ArgumentNullException(nameof(azSearchQueryKey));
+            if (String.IsNullOrWhiteSpace(azSearchIndexName)) throw new ArgumentNullException(nameof(azSearchIndexName));
+
+            dynamic vectorStore = null;
             var success = false;
             using (Py.GIL())
             {
-                using(var scope = Py.CreateScope())
+                using (var scope = Py.CreateScope())
                 {
                     try
                     {
                         //OnProcessStarted?.Invoke(this, "Loading modules");
-                        dynamic vectorstores = scope.Import("langchain.vectorstores");
+                        dynamic azureSearch = scope.Import("langchain.vectorstores.azuresearch");
                         dynamic chains = scope.Import("langchain.chains");
                         dynamic question_answering = scope.Import("langchain.chains.question_answering");
                         dynamic chat_models = scope.Import("langchain.chat_models");
@@ -80,23 +83,28 @@ namespace PyProcessors
                         );
 
                         //load the faiss vector store we saved into memory
-                        dynamic vectorStore = vectorstores.FAISS.load_local(faissIndexModelFilePath, embeddings);
+                        vectorStore = azureSearch.AzureSearch(
+                            Py.kw("azure_search_endpoint", azSearchEndpoint),
+                            Py.kw("azure_search_key", azSearchQueryKey),
+                            Py.kw("index_name", azSearchIndexName),
+                            Py.kw("embedding_function", embeddings.embed_query)
+                            );
 
-                        //use the faiss vector store we saved to search the local document
-                        dynamic retriever = vectorStore.as_retriever(
-                            Py.kw("search_type", "similarity"),
-                            //Py.kw("search_kwargs", "{ \"k\":2}")
-                            Py.kw("search_kwargs",Py.kw("k",2))
-                            );
-                        //use the vector store as a retriever
-                        qa = chains.RetrievalQA.from_chain_type(
-                            Py.kw("llm", llm),
-                            Py.kw("chain_type", "stuff"),
-                            //Py.kw("chain_type","refine"),
-                            Py.kw("retriever", retriever),
-                            Py.kw("return_source_documents", false.ToPython())
-                            );
-                        //OnProcessCompleted?.Invoke(this, true);
+                        ////use the faiss vector store we saved to search the local document
+                        //dynamic retriever = vectorStore.as_retriever(
+                        //    Py.kw("search_type", "similarity"),
+                        //    //Py.kw("search_kwargs", "{ \"k\":2}")
+                        //    Py.kw("search_kwargs", Py.kw("k", 2))
+                        //    );
+                        ////use the vector store as a retriever
+                        //qa = chains.RetrievalQA.from_chain_type(
+                        //    Py.kw("llm", llm),
+                        //    Py.kw("chain_type", "stuff"),
+                        //    //Py.kw("chain_type","refine"),
+                        //    Py.kw("retriever", retriever),
+                        //    Py.kw("return_source_documents", true.ToPython())
+                        //    );
+                        ////OnProcessCompleted?.Invoke(this, true);
                         success = true;
                         //return qa;
                     }
@@ -110,9 +118,9 @@ namespace PyProcessors
                 }
             }
             //OnProcessCompleted?.Invoke(this, success);
-            return qa;
+            return vectorStore;
         }
-        public string? AskQuestion(dynamic qaChat, string question)
+        public string? AskQuestion(dynamic vectorStore, string question)
         {
             using (Py.GIL())
             {
@@ -126,42 +134,22 @@ namespace PyProcessors
                 try
                 {
                     OnProcessStarted?.Invoke(this, "Thinking...");
-                    //var result = qaChat(Py.kw("query", question));
-                    dynamic result = qaChat(Py.kw("inputs", Py.kw("query", question)));
-                    //return result;
-                    var answer = result["result"];
-                    var pyString = new PyString(answer);
-                    
+                    var docs = vectorStore.similarity_search(
+                        Py.kw("query", question),
+                        Py.kw("k", 3)
+                    );
                     //return result;
                     OnProcessCompleted?.Invoke(this, true);
-                    return pyString.ToString();
+                    return new PyString(docs[0].page_content).ToString();
                 }
                 catch (Exception ex)
                 {
                     OnProcessCompleted?.Invoke(this, false);
                     throw;
                 }
-                
-            }
-                
-        }
-        //public string? AskAQuestion(string faissIndexModelFilePath, string question)
-        //{
-        //    using (Py.GIL())
-        //    {
-        //        using var scope = Py.CreateScope();
 
-        //        var qa = GetChatModule(scope, faissIndexModelFilePath);
-        //        var result = AskQuestion(qa, question);
-        //        var answer = result["result"];
-        //        var pyString = new PyString(answer);
-        //        return pyString.ToString();
-        //    }
-        //}
-        public void Dispose()
-        {
-            //scope?.Dispose();
-            //GILState?.Dispose();
+            }
+
         }
     }
 }

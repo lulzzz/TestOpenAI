@@ -6,6 +6,7 @@ using PyProcessors;
 using TestOpenAI.Data;
 using TestOpenAI.Helpers;
 using TestOpenAI.Models;
+using TestOpenAI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,6 +31,16 @@ builder.Services.AddScoped<FAISSChatProcessor>((serviceProvider) =>
     var aoaiSettings = serviceProvider.GetService<IOptionsMonitor<AOAISettings>>()?.CurrentValue;
     return new FAISSChatProcessor(aoaiSettings?.AOAI_KEY, aoaiSettings?.AOAI_ENDPOINT, aoaiSettings?.AOAI_CHAT_DEPLOYMENT_NAME, aoaiSettings?.AOAI_CHAT_DEPLOYMENT_MODEL, aoaiSettings?.AOAI_EMBEDDED_DEPLOYMENT_MODEL);
 });
+builder.Services.AddScoped<AZCognitiveSearch>((serviceProvider) =>
+{
+    var aoaiSettings = serviceProvider.GetService<IOptionsMonitor<AOAISettings>>()?.CurrentValue;
+    return new AZCognitiveSearch(aoaiSettings?.AOAI_KEY, aoaiSettings?.AOAI_ENDPOINT, aoaiSettings?.AOAI_CHAT_DEPLOYMENT_NAME, aoaiSettings?.AOAI_CHAT_DEPLOYMENT_MODEL, aoaiSettings?.AOAI_EMBEDDED_DEPLOYMENT_MODEL);
+});
+builder.Services.AddScoped<AZChatCognitiveService>();
+
+builder.Services.AddHttpClient();
+
+
 await PyProcessors.PySetup.Initialize((s) => { Console.WriteLine(s); });
 
 var app = builder.Build();

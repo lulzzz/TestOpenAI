@@ -68,6 +68,7 @@
             ChatCompletions response = await openAIClient.GetChatCompletionsAsync(AOAI_CHAT_DEPLOYMENT_NAME, completionOptions);
             completionOptions.Messages.Add(response.Choices[0].Message);
             await InvokeAsync(StateHasChanged);
+            
         }
     }
     protected async Task DoChat()

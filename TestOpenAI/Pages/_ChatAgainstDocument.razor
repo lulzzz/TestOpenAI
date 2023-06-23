@@ -5,7 +5,7 @@
 @using Azure.AI.OpenAI;
 @implements IDisposable;
 <h3>Chat Against Document</h3>
-<div class="card shadow">
+<div class="card shadow mb-3">
     <div class="card-body d-flex justify-content-between">
         <select class="form-select" @onchange="OnSelectChanged">
             <option value="" selected="@(selectedIndex == String.Empty)">-- Select document --</option>

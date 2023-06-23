@@ -4,6 +4,7 @@
     {
         public string? AOAI_ENDPOINT { get; set; }
         public string? AOAI_KEY { get; set; }
+        public string? AOAI_VERSION { get; set; }
 
         
         public string? AOAI_TEXT_DEPLOYMENT_NAME { get; set; } //e.g. jl-text-davinci-003

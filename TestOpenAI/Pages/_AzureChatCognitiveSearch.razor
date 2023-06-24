@@ -12,7 +12,7 @@
     <div class="col-9 d-flex flex-column justify-content-between">
         <div class="card shadow">
             <div class="card-header">Chat</div>
-            <div class="card-body" style="height:450px; overflow-y:auto;">
+            <div class="card-body" style="height:450px; overflow-y:auto;" @ref="bodyMessages">
                 @foreach (var item in azCognitiveSearch.ChatMessagesWithCitations ?? new Dictionary<ChatMessage, List<ResponseCitation>>())
                 {
                     <_ChatMessage chatMessage="@item.Key" citations="@item.Value" OnCitationClicked="OnCitationClicked" />
@@ -51,6 +51,9 @@
     [Inject] protected IOptionsMonitor<AOAISettings> aoaiSettings { get; set; }
     [Inject] protected AZChatCognitiveService azCognitiveSearch { get; set; } = null!;
     [Inject] protected IConfiguration configuration { get; set; } = null!;
+    [Inject] protected IJSRuntime jsRuntime { get; set; } = null!;
+
+    ElementReference bodyMessages;
     protected string processMessage { get; set; } = string.Empty;
     bool isReady;
     bool processing;
@@ -59,7 +62,13 @@
     ChatMessage busyChatMessage = new ChatMessage(ChatRole.System, "Thinking...");
     protected override async Task OnInitializedAsync()
     {
-        azCognitiveSearch.OnBusy += (sender, isBusy) => processing = isBusy;
+        azCognitiveSearch.OnBusy += async (sender, isBusy) =>
+        {
+            processing = isBusy;
+            await InvokeAsync(StateHasChanged);
+            await Task.Delay(1);
+            await jsRuntime.InvokeVoidAsync("scrollToBottom", bodyMessages);
+        };
         var endPoint = configuration.GetValue<string>("AZCognitiveSettings:ENDPOINT");
         var queryKey = configuration.GetValue<string>("AZCognitiveSettings:QUERY_KEY");
         var adminKey = configuration.GetValue<string>("AZCognitiveSettings:ADMIN_KEY");

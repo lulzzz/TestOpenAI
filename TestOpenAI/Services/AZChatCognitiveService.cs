@@ -75,10 +75,10 @@ namespace TestOpenAI.Services
                     roleInformation = "I am your helper for employees"
                 }
             });
-            foreach (var chatMessage in ChatMessagesWithCitations.TakeLast(3).Select(x=>x.Key)) // ChatMessages.TakeLast(3))
-            {
-                body.messages.Add(new Message() { role = chatMessage.Role.Label, content = chatMessage.Content});
-            }
+            //foreach (var chatMessage in ChatMessagesWithCitations.Where(x=>x.Key.Role==ChatRole.Assistant).TakeLast(3).Select(x=>x.Key)) // ChatMessages.TakeLast(3))
+            //{
+            //    body.messages.Add(new Message() { role = chatMessage.Role.Label, content = chatMessage.Content});
+            //}
             return body;
         }
 
@@ -89,6 +89,7 @@ namespace TestOpenAI.Services
             //ChatMessages.Add(new ChatMessage(ChatRole.User, message));
             ChatMessagesWithCitations.Add(new ChatMessage(ChatRole.User, message), new List<ResponseCitation>());
             var body = GetRequestBody();
+            body.messages.Add(new Message() { role = ChatRole.User.Label, content=message});
 
             var resp = await _httpClient.PostAsJsonAsync<RequestBody>(url, body);
             if (resp.IsSuccessStatusCode)

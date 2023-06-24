@@ -19,6 +19,8 @@ namespace TestOpenAI.Services
         public Dictionary<ChatMessage, List<ResponseCitation>> ChatMessagesWithCitations { get; set; } = new();
         public List<ResponseCitation> Citations { get => ChatMessagesWithCitations.SelectMany(x=>x.Value).ToList(); }
 
+        public EventHandler<bool> OnBusy { get; set; }
+
         //public List<ChatMessage> ChatMessages { get; set; } = new();
         //public List<ResponseCitation> Citations{get;set;} = new();
         public AZChatCognitiveService(IHttpClientFactory httpClientFactory)
@@ -82,6 +84,7 @@ namespace TestOpenAI.Services
 
         public async Task DoChat(string message)
         {
+            OnBusy.Invoke(this, true);
             var url = $"{_chatGptEndpoint.TrimEnd('/')}/openai/deployments/{_chatGptDeploymentId}/extensions/chat/completions?api-version={_aoaiVersion}";
             //ChatMessages.Add(new ChatMessage(ChatRole.User, message));
             ChatMessagesWithCitations.Add(new ChatMessage(ChatRole.User, message), new List<ResponseCitation>());
@@ -134,31 +137,10 @@ namespace TestOpenAI.Services
                         ChatMessagesWithCitations.Add(new ChatMessage(ChatRole.Assistant, msgContent), choiceCitations);
                     }
 
-                    //now replace
-                    //if (choiceCitations.Any())
-                    //{
-                    //foreach (var msg in choiceMessages)
-                    //{
-                    //    var msgContent = msg.Content;
-                    //    foreach (var citation in choiceCitations)
-                    //    {
-                    //        int docIndex = choiceCitations.IndexOf(citation) + 1;// int.Parse(citation.chunk_id) + 1;
-                    //        var strToSearch = $"[doc{docIndex}]";
-                    //        var strToReplaceWith = $"<sup>{docIndex}</sup>";
-                    //        msgContent = msgContent.Replace(strToSearch, strToReplaceWith);
-                    //    }
-                    //    //ChatMessages.Add(new ChatMessage(msg.Role, msgContent));
-                    //    ChatMessagesWithCitations.Add(new ChatMessage(ChatRole.Assistant, msgContent), choiceCitations);
-                    //}
-                    //}
-                    //else
-                    //{
-                    //ChatMessages.AddRange(choiceMessages);
-                    //}
-
-                    //Citations.AddRange(choiceCitations);
+                    
                 }
             }
+            OnBusy.Invoke(this, false);
         }
     }
 

@@ -8,22 +8,40 @@
 <div class="alert alert-primary" role="alert">
     @((MarkupString)processMessage)
 </div>
-<div class="card shadow">
-    <div class="card-header">Chat</div>
-    <div class="card-body" style="height:400px; overflow-y:auto;">
-        @foreach (var msg in azCognitiveSearch.ChatMessages ?? new List<ChatMessage>())
+<div class="row" style="height:600px;">
+    <div class="col-9 d-flex flex-column justify-content-between">
+        <div class="card shadow">
+            <div class="card-header">Chat</div>
+            <div class="card-body" style="height:450px; overflow-y:auto;">
+                @foreach (var item in azCognitiveSearch.ChatMessagesWithCitations ?? new Dictionary<ChatMessage, List<ResponseCitation>>())
+                {
+                    <_ChatMessage chatMessage="@item.Key" citations="@item.Value" OnCitationClicked="OnCitationClicked" />
+                }
+            </div>
+        </div>
+        @if (isReady)
         {
-            <_ChatMessage chatMessage="@msg" />
+            <div class="mt-4 border border-1 input-group shadow">
+                <textarea class="form-control" rows="3" @bind="userInput" id="floatingInput" placeholder="Ask me something."></textarea>
+                <button class="btn btn-outline-secondary" type="button" @onclick="DoChat"><i class="oi oi-arrow-circle-right"></i></button>
+            </div>
         }
     </div>
-</div>
-@if (isReady)
-{
-    <div class="mt-4 border border-1 input-group shadow">
-        <textarea class="form-control" rows="3" @bind="userInput" id="floatingInput" placeholder="Ask me something."></textarea>
-        <button class="btn btn-outline-secondary" type="button" @onclick="DoChat"><i class="oi oi-arrow-circle-right"></i></button>
+    <div class="col-3">
+        <div class="card shadow" style="height:600px;overflow-y:auto">
+            <div class="card-header">Citations</div>
+            @if (citation != null)
+            {
+                <div class="card-body">
+                    <h5 class="card-title">@citation.title</h5>
+                    <h6 class="small card-subtitle mb-2 text-muted">@citation.filepath</h6>
+                    <p class="card-text">@citation.content</p>
+                </div>
+            }
+        </div>
     </div>
-}
+</div>
+
 
 @code {
     [Inject] protected IOptionsMonitor<AOAISettings> aoaiSettings { get; set; }
@@ -32,7 +50,7 @@
     protected string processMessage { get; set; } = string.Empty;
     bool isReady;
     string? userInput;
-
+    ResponseCitation? citation;
     protected override async Task OnInitializedAsync()
     {
         var endPoint = configuration.GetValue<string>("AZCognitiveSettings:ENDPOINT");
@@ -64,5 +82,9 @@
             await Task.Delay(1);
 
         }
+    }
+    private void OnCitationClicked(ResponseCitation clickedCitation)
+    {
+        citation = clickedCitation;
     }
 }

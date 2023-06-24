@@ -1,12 +1,25 @@
 ﻿@using Azure.AI.OpenAI;
+@using TestOpenAI.Services;
 <div class="d-flex flex-row @justifyContent mb-4">
     @if (!String.IsNullOrWhiteSpace(imgSrc) && (chatMessage.Role == ChatRole.System || chatMessage.Role == ChatRole.Assistant))
     {
         <img style="height:45px;width:45px;" src="@imgSrc" />
     }
     <div class="p-3 @startEndMargin border border-1 rounded mt-auto white-space-preline" style="background-color: @backgroundColor;">
-        <p class="small mb-0">
+        <p class="mb-0">
             @((MarkupString)chatMessage.Content)
+            @if(citations!=null && citations.Any())
+            {
+                <p class="small">
+                    <div class="text-muted small">@citations.Count references</div>
+                    <ul class="list-inline">
+                        @foreach (var citation in citations)
+                        {
+                            <li class="list-inline-item">@($"{citations.IndexOf(citation) + 1}.") <span class="btn btn-link ps-0" @onclick="@(()=>{CitationClicked(citation.uniqueid);})">@citation.filepath</span></li>
+                        }
+                    </ul>
+                </p>
+            }
         </p>
     </div>
     @if (!String.IsNullOrWhiteSpace(imgSrc) && (chatMessage.Role == ChatRole.User))
@@ -17,7 +30,8 @@
 
 @code {
     [Parameter] public ChatMessage chatMessage{ get; set; }
-
+    [Parameter] public List<ResponseCitation>? citations{ get; set; }
+    [Parameter] public EventCallback<ResponseCitation> OnCitationClicked{ get; set; }
     private string justifyContent;
     private string imgSrc;
     private string backgroundColor;
@@ -42,5 +56,12 @@
                 break;
         }
         await InvokeAsync(StateHasChanged);
+    }
+    private async Task CitationClicked(string uniqueid)
+    {
+        if (OnCitationClicked.HasDelegate)
+        {
+            await OnCitationClicked.InvokeAsync(citations.FirstOrDefault(x => x.uniqueid == uniqueid));
+        }   
     }
 }

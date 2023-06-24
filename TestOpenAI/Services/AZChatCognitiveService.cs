@@ -16,9 +16,11 @@ namespace TestOpenAI.Services
         private string _cognitiveSearchAdminKey;
         private string _cognitiveSearchIndexName;
 
-        //public Dictionary<ChatMessage, List<ResponseCitation>> ChatMessagesWithCitations { get; set; } = new();
-        public List<ChatMessage> ChatMessages { get; set; } = new();
-        public List<ResponseCitation> Citations{get;set;} = new();
+        public Dictionary<ChatMessage, List<ResponseCitation>> ChatMessagesWithCitations { get; set; } = new();
+        public List<ResponseCitation> Citations { get => ChatMessagesWithCitations.SelectMany(x=>x.Value).ToList(); }
+
+        //public List<ChatMessage> ChatMessages { get; set; } = new();
+        //public List<ResponseCitation> Citations{get;set;} = new();
         public AZChatCognitiveService(IHttpClientFactory httpClientFactory)
         {
             this._httpClient = httpClientFactory.CreateClient();
@@ -71,7 +73,7 @@ namespace TestOpenAI.Services
                     roleInformation = "I am your helper for employees"
                 }
             });
-            foreach (var chatMessage in ChatMessages.TakeLast(3))
+            foreach (var chatMessage in ChatMessagesWithCitations.TakeLast(3).Select(x=>x.Key)) // ChatMessages.TakeLast(3))
             {
                 body.messages.Add(new Message() { role = chatMessage.Role.Label, content = chatMessage.Content});
             }
@@ -81,7 +83,8 @@ namespace TestOpenAI.Services
         public async Task DoChat(string message)
         {
             var url = $"{_chatGptEndpoint.TrimEnd('/')}/openai/deployments/{_chatGptDeploymentId}/extensions/chat/completions?api-version={_aoaiVersion}";
-            ChatMessages.Add(new ChatMessage(ChatRole.User, message));
+            //ChatMessages.Add(new ChatMessage(ChatRole.User, message));
+            ChatMessagesWithCitations.Add(new ChatMessage(ChatRole.User, message), new List<ResponseCitation>());
             var body = GetRequestBody();
 
             var resp = await _httpClient.PostAsJsonAsync<RequestBody>(url, body);
@@ -119,48 +122,41 @@ namespace TestOpenAI.Services
                     }
                     foreach (var msg in choice.messages.Where(x => x.role == ChatRole.Assistant.Label).OrderBy(x => x.index))
                     {
-                        //var msgContent = msg.content;
-                        if (choiceCitations.Any())
+                        var msgContent = msg.content;
+                        foreach (var citation in choiceCitations)
                         {
-                            StringBuilder sb = new StringBuilder();
-                            sb.Append("<p>");
-                            sb.Append($"<div class='text-muted small'>{choiceCitations.Count} references</div>");
-                            sb.Append("<ul class='list-inline'>");
-                            foreach (var citation in choiceCitations)
-                            {
-                                sb.Append($"<li class='list-inline-item btn-link' role='button'>{choiceCitations.IndexOf(citation) + 1}. {citation.filepath}</li>");
-                            }
-                            sb.Append("</ul>");
-                            sb.Append("</p>");
-                            msg.content += sb.ToString();
+                            int docIndex = choiceCitations.IndexOf(citation) + 1;// int.Parse(citation.chunk_id) + 1;
+                            var strToSearch = $"[doc{docIndex}]";
+                            var strToReplaceWith = "";// $"<sup>{docIndex}</sup>";
+                            msgContent = msgContent.Replace(strToSearch, strToReplaceWith);
                         }
-                        
-                        choiceMessages.Add(new ChatMessage(ChatRole.Assistant, msg.content));
-
+                        //ChatMessages.Add(new ChatMessage(msg.Role, msgContent));
+                        ChatMessagesWithCitations.Add(new ChatMessage(ChatRole.Assistant, msgContent), choiceCitations);
                     }
 
                     //now replace
                     //if (choiceCitations.Any())
                     //{
-                    //    foreach (var msg in choiceMessages)
+                    //foreach (var msg in choiceMessages)
+                    //{
+                    //    var msgContent = msg.Content;
+                    //    foreach (var citation in choiceCitations)
                     //    {
-                    //        var msgContent = msg.Content;
-                    //        foreach (var citation in choiceCitations)
-                    //        {
-                    //            int docIndex = choiceCitations.IndexOf(citation) + 1;// int.Parse(citation.chunk_id) + 1;
-                    //            var strToSearch = $"[doc{docIndex}]";
-                    //            var strToReplaceWith = $"<sup class='btn-link' role='button'>{docIndex}</sup>";
-                    //            msgContent = msgContent.Replace(strToSearch, strToReplaceWith);
-                    //        }
-                    //        ChatMessages.Add(new ChatMessage(msg.Role, msgContent));
+                    //        int docIndex = choiceCitations.IndexOf(citation) + 1;// int.Parse(citation.chunk_id) + 1;
+                    //        var strToSearch = $"[doc{docIndex}]";
+                    //        var strToReplaceWith = $"<sup>{docIndex}</sup>";
+                    //        msgContent = msgContent.Replace(strToSearch, strToReplaceWith);
                     //    }
+                    //    //ChatMessages.Add(new ChatMessage(msg.Role, msgContent));
+                    //    ChatMessagesWithCitations.Add(new ChatMessage(ChatRole.Assistant, msgContent), choiceCitations);
+                    //}
                     //}
                     //else
                     //{
-                    ChatMessages.AddRange(choiceMessages);
+                    //ChatMessages.AddRange(choiceMessages);
                     //}
-                    
-                    Citations.AddRange(choiceCitations);
+
+                    //Citations.AddRange(choiceCitations);
                 }
             }
         }

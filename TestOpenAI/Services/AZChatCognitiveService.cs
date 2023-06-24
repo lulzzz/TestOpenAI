@@ -1,4 +1,6 @@
 ﻿using Azure.AI.OpenAI;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace TestOpenAI.Services
 {
@@ -14,7 +16,9 @@ namespace TestOpenAI.Services
         private string _cognitiveSearchAdminKey;
         private string _cognitiveSearchIndexName;
 
+        //public Dictionary<ChatMessage, List<ResponseCitation>> ChatMessagesWithCitations { get; set; } = new();
         public List<ChatMessage> ChatMessages { get; set; } = new();
+        public List<ResponseCitation> Citations{get;set;} = new();
         public AZChatCognitiveService(IHttpClientFactory httpClientFactory)
         {
             this._httpClient = httpClientFactory.CreateClient();
@@ -86,17 +90,84 @@ namespace TestOpenAI.Services
                 //var ret = await resp.Content.ReadFromJsonAsync<ChatCompletions>();
                 //var ret = await resp.Content.ReadAsStringAsync();
                 var ret = await resp.Content.ReadFromJsonAsync<CognitiveResponse>();
-
+                
                 foreach (var choice in ret.choices)
                 {
-                    foreach (var msg in choice.messages.Where(x=>x.role == ChatRole.Assistant.Label).OrderBy(x=>x.index))
+                    List<ChatMessage> choiceMessages = new();
+                    List<ResponseCitation> choiceCitations = new();
+                    //foreach (var msg in choice.messages.Where(x=>x.role == ChatRole.Assistant.Label).OrderBy(x=>x.index))
+                    //{
+                    //    choiceMessages.Add(new ChatMessage(ChatRole.Assistant, msg.content));
+                    //}
+                    foreach (var msg in choice.messages.Where(s=>s.role == "tool"))
                     {
-                        ChatMessages.Add(new ChatMessage(ChatRole.Assistant, msg.content));
+                        try
+                        {
+                            var citations = System.Text.Json.JsonSerializer.Deserialize<ResponseCitations>(msg.content);
+                            foreach (var citation in citations.citations)
+                            {
+                                citation.messageId = ret.id;
+                            }
+                            choiceCitations.AddRange(citations.citations);
+                        }
+                        catch (Exception ex)
+                        {
+
+                            //throw;
+                        }
+                        
                     }
+                    foreach (var msg in choice.messages.Where(x => x.role == ChatRole.Assistant.Label).OrderBy(x => x.index))
+                    {
+                        //var msgContent = msg.content;
+                        if (choiceCitations.Any())
+                        {
+                            StringBuilder sb = new StringBuilder();
+                            sb.Append("<p>");
+                            sb.Append($"<div class='text-muted small'>{choiceCitations.Count} references</div>");
+                            sb.Append("<ul class='list-inline'>");
+                            foreach (var citation in choiceCitations)
+                            {
+                                sb.Append($"<li class='list-inline-item btn-link' role='button'>{choiceCitations.IndexOf(citation) + 1}. {citation.filepath}</li>");
+                            }
+                            sb.Append("</ul>");
+                            sb.Append("</p>");
+                            msg.content += sb.ToString();
+                        }
+                        
+                        choiceMessages.Add(new ChatMessage(ChatRole.Assistant, msg.content));
+
+                    }
+
+                    //now replace
+                    //if (choiceCitations.Any())
+                    //{
+                    //    foreach (var msg in choiceMessages)
+                    //    {
+                    //        var msgContent = msg.Content;
+                    //        foreach (var citation in choiceCitations)
+                    //        {
+                    //            int docIndex = choiceCitations.IndexOf(citation) + 1;// int.Parse(citation.chunk_id) + 1;
+                    //            var strToSearch = $"[doc{docIndex}]";
+                    //            var strToReplaceWith = $"<sup class='btn-link' role='button'>{docIndex}</sup>";
+                    //            msgContent = msgContent.Replace(strToSearch, strToReplaceWith);
+                    //        }
+                    //        ChatMessages.Add(new ChatMessage(msg.Role, msgContent));
+                    //    }
+                    //}
+                    //else
+                    //{
+                    ChatMessages.AddRange(choiceMessages);
+                    //}
+                    
+                    Citations.AddRange(choiceCitations);
                 }
             }
         }
     }
+
+
+    
     #region request
     class RequestBody //: ChatCompletionsOptions
     {
@@ -149,13 +220,13 @@ namespace TestOpenAI.Services
     #endregion
 
     #region response
-    public class ResponseChoice
+    class ResponseChoice
     {
         public int index { get; set; }
         public List<ResponseMessage> messages { get; set; } = new();
     }
 
-    public class ResponseMessage
+    class ResponseMessage
     {
         public int index { get; set; }
         public string? role { get; set; }
@@ -163,13 +234,30 @@ namespace TestOpenAI.Services
         public string? content { get; set; }
     }
 
-    public class CognitiveResponse
+    class CognitiveResponse
     {
         public string? id { get; set; }
         public string? model { get; set; }
         public int created { get; set; }
         public string? @object { get; set; }
         public List<ResponseChoice> choices { get; set; } = new();
+    }
+
+    public class ResponseCitation
+    {
+        public string? messageId { get; set; }
+        public string? content { get; set; }
+        public string? id { get; set; }
+        public string? title { get; set; }
+        public string? filepath { get; set; }
+        public string? url { get; set; }
+        public string? chunk_id { get; set; }
+
+        public string? uniqueid { get => $"{messageId}_{chunk_id}"; }
+    }
+    class ResponseCitations
+    {
+        public List<ResponseCitation> citations { get; set; } = new();
     }
     #endregion
 

@@ -6,7 +6,7 @@
     }
     <div class="p-3 @startEndMargin border border-1 rounded mt-auto white-space-preline" style="background-color: @backgroundColor;">
         <p class="small mb-0">
-            @chatMessage.Content
+            @((MarkupString)chatMessage.Content)
         </p>
     </div>
     @if (!String.IsNullOrWhiteSpace(imgSrc) && (chatMessage.Role == ChatRole.User))

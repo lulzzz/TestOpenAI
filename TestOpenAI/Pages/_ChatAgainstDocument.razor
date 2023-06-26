@@ -69,14 +69,15 @@
 
     private async Task ShowUploadDocument()
     {
-        ModalParameters modalParameters = new ModalParameters();
-        modalParameters.Add(nameof(_UploadDocument.OnIndexed), EventCallback.Factory.Create<string?>(this, async (indexFileName) =>
-        {
-            selectedIndex = indexFileName;
-            await modalService.Close();
-            LoadIndexedDocuments();
-        }));
-        await modalService.ShowModalDynamic<_UploadDocument>(Title: "Upload Document", parameters: modalParameters);
+        //ModalParameters modalParameters = new ModalParameters();
+        //modalParameters.Add(nameof(_UploadDocument.OnIndexed), EventCallback.Factory.Create<string?>(this, async (indexFileName) =>
+        //{
+        //    selectedIndex = indexFileName;
+        //    await modalService.Close();
+        //    LoadIndexedDocuments();
+        //}));
+        //await modalService.ShowModalDynamic<_UploadDocument>(Title: "Upload Document", parameters: modalParameters);
+        await modalService.ShowModalDynamic<_UploadDocuments>(Title: "Upload Documents");
     }
     private void LoadIndexedDocuments()
     {

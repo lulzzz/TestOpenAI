@@ -1,0 +1,129 @@
+﻿@using Microsoft.Extensions.Options;
+@using PyProcessors;
+@using System.ComponentModel.DataAnnotations;
+@using TestOpenAI.Helpers;
+@using TestOpenAI.Models;
+@implements IDisposable;
+
+
+<div class="mb-3 row">
+    <label for="staticEmail" class="col-sm-2 col-form-label">Index name <span class="text-danger">*</span></label>
+    <div class="col-sm-10">
+        <input type="text" class="form-control" placeholder="Give a name for the index, alphanumeric and spaces only" required @bind="IndexName" @bind:event="oninput" />
+        <div class="text-danger small @(String.IsNullOrWhiteSpace(indexName)?"visible":"invisible")">
+            Required
+        </div>
+    </div>
+</div>
+
+@for (int i = 0; i < numberOfInputFiles; i++)
+{
+    <InputFile @key="i" OnChange="OnFileChanged" multiple style="@GetInputFileStyle(i)" accept=".pdf"></InputFile>
+}
+    
+<div>
+    @((MarkupString)processMsg)
+</div>
+
+<table class="table table-sm table-striped small mt-3 border-top border-bottom">
+    <thead>
+        <tr>
+            <th>File Name</th>
+            <th><span role="button" class="btn-link float-end" @onclick="@(()=>{lstFiles.Clear();})">Remove All</span></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var file in lstFiles)
+        {
+            <tr>
+                <td>@file.Name</td>
+                <td><span class="btn-link float-end" role="button" @onclick="@(()=> {RemoveFile(file);})">Remove</span></td>
+            </tr>
+        }
+    </tbody>
+</table>
+<button class="btn btn-primary" @onclick="ProcessFiles">Upload files</button>
+
+
+@code {
+    [Inject] protected IWebHostEnvironment webHostEnvironment { get; set; } = null!;
+    [Inject] protected PdfProcessor pdfProcessor { get; set; } = null!;
+
+    [Parameter] public EventCallback<string?> OnIndexed { get; set; }
+
+    private List<IBrowserFile> lstFiles = new();
+    string? status;
+    int numberOfInputFiles = 1;
+
+
+    string indexName = String.Empty;
+
+    string IndexName
+    {
+        get => indexName;
+        set => indexName = CleanIndexName(value);
+    }
+    private string processMsg = String.Empty;
+
+    protected override void OnInitialized()
+    {
+        pdfProcessor.OnProcess += HandleOnProcessed;
+        pdfProcessor.OnCompleted += HandleOnCompleted;
+    }
+    private async void HandleOnProcessed(object? sender, string? msg)
+    {
+        processMsg = msg;
+        await InvokeAsync(StateHasChanged);
+    }
+    private async void HandleOnCompleted(object? sender, bool success)
+    {
+        if (success)
+            processMsg = String.Empty;
+        else
+            processMsg = "<span class='text-danger'>Error indexing file</span>";
+        await InvokeAsync(StateHasChanged);
+    }
+    string GetInputFileStyle(int index)
+    {
+        return index == numberOfInputFiles - 1 ? "" : "display: none";
+    }
+    string GetInputFileClass(IBrowserFile file) => file == lstFiles.Last() ? "" : "d-none";
+    string CleanIndexName(string idxName) => new String((idxName ?? "").Where(c => Char.IsLetterOrDigit(c) || c == ' ').ToArray());
+
+
+    async Task OnFileChanged(InputFileChangeEventArgs e)
+    {
+        // Create a new InputFile component
+        numberOfInputFiles++;
+
+        try
+        {
+            lstFiles.AddRange(e.GetMultipleFiles(e.FileCount));
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (Exception ex)
+        {
+            status += "\nError: " + ex.Message;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+    async Task ProcessFiles()
+    {
+        if (String.IsNullOrWhiteSpace(IndexName) || !lstFiles.Any())
+            return;
+
+    }
+    void RemoveFile(IBrowserFile file)
+    {
+        lstFiles.Remove(file);
+    }
+
+    public void Dispose()
+    {
+        lstFiles.Clear();
+        processMsg = String.Empty;
+        pdfProcessor.OnProcess -= HandleOnProcessed;
+        pdfProcessor.OnCompleted -= HandleOnCompleted;
+    }
+    
+}

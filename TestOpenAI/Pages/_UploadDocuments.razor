@@ -13,6 +13,9 @@
         <div class="text-danger small @(String.IsNullOrWhiteSpace(indexName)?"visible":"invisible")">
             Required
         </div>
+        <div class="text-danger small @(indexExists?"visible":"invisible")">
+            Index already exists
+        </div>
     </div>
 </div>
 
@@ -52,6 +55,7 @@
     [Parameter] public EventCallback<string?> OnIndexed { get; set; }
 
     private List<IBrowserFile> lstFiles = new();
+    private bool indexExists = false;
     string? status;
     int numberOfInputFiles = 1;
 
@@ -88,7 +92,7 @@
         return index == numberOfInputFiles - 1 ? "" : "display: none";
     }
     string GetInputFileClass(IBrowserFile file) => file == lstFiles.Last() ? "" : "d-none";
-    string CleanIndexName(string idxName) => new String((idxName ?? "").Where(c => Char.IsLetterOrDigit(c) || c == ' ').ToArray());
+    string CleanIndexName(string idxName) => (new String((idxName ?? "").Where(c => Char.IsLetterOrDigit(c) || c == ' ').ToArray()));
 
 
     async Task OnFileChanged(InputFileChangeEventArgs e)
@@ -112,6 +116,31 @@
         if (String.IsNullOrWhiteSpace(IndexName) || !lstFiles.Any())
             return;
 
+        var documentSourceFolder = Utility.GetDocumentSourceFolder(webHostEnvironment);
+        var documentIndexDir = Utility.GetDocumentIndexFolder(webHostEnvironment);
+
+        indexExists = pdfProcessor.IndexExists(IndexName, documentIndexDir);
+        if (indexExists)
+            return;
+
+        var sourceDir = Path.Combine(documentSourceFolder, IndexName);
+        if (!Directory.Exists(sourceDir))
+            Directory.CreateDirectory(sourceDir);
+
+        List<PyProcessors.UploadFile> uploadFiles = new();
+        foreach(var file in lstFiles)
+        {
+            var path = Path.Combine(sourceDir, Path.GetFileName(file.Name));
+            await using FileStream fs = new(path, FileMode.Create);
+            await file.OpenReadStream(file.Size).CopyToAsync(fs);
+            fs.Flush();
+
+            var uploadFile = new UploadFile() { FilePath = path, ContentType = file.ContentType };
+            uploadFiles.Add(uploadFile);
+        }
+        var indexFileName = pdfProcessor.ProcessPdfs(IndexName, documentIndexDir, uploadFiles);
+        if (OnIndexed.HasDelegate)
+            await OnIndexed.InvokeAsync(indexFileName);
     }
     void RemoveFile(IBrowserFile file)
     {

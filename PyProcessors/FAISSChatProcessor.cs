@@ -156,12 +156,13 @@ namespace PyProcessors
                 {
                     dynamic vectorstores = scope.Import("langchain.vectorstores");
                     dynamic chains = scope.Import("langchain.chains");
-                    dynamic question_answering = scope.Import("langchain.chains.question_answering");
+                    //dynamic question_answering = scope.Import("langchain.chains.question_answering");
                     dynamic chat_models = scope.Import("langchain.chat_models");
                     dynamic openApiLangChain = scope.Import("langchain.embeddings.openai");
                     dynamic openai = scope.Import("openai");
                     dynamic prompts = scope.Import("langchain.prompts");
-                    dynamic memory = scope.Import("langchain.memory");
+                    //dynamic memory = scope.Import("langchain.memory");
+                    dynamic sumMemory = scope.Import("langchain.chains.conversation.memory");
 
 
                     openai.api_type = "azure";
@@ -200,15 +201,16 @@ namespace PyProcessors
                             Follow Up Input: {question}
                             Standalone question:""";
                     dynamic CONDENSE_QUESTION_PROMPT = prompts.PromptTemplate.from_template(promptTemplate);
-                    var bufferMemory = memory.ConversationBufferMemory(Py.kw("memory_key", "chat_history"), Py.kw("return_messages", true.ToPython()));
+                    //var bufferMemory = memory.ConversationBufferMemory(Py.kw("memory_key", "chat_history"), Py.kw("return_messages", true.ToPython()));
+                    var bufferSumMemory = sumMemory.ConversationSummaryMemory(Py.kw("llm", llm), Py.kw("memory_key", "chat_history"), Py.kw("return_messages", true.ToPython()));
                     qa = chains.ConversationalRetrievalChain.from_llm(
                         Py.kw("llm", llm),
                         Py.kw("retriever", retriever),
                         Py.kw("condense_question_prompt", CONDENSE_QUESTION_PROMPT),
                         Py.kw("return_source_documents", false.ToPython()),
                         Py.kw("verbose", false.ToPython()),
-                        Py.kw("memory", bufferMemory)
-                        ); ;
+                        Py.kw("memory", bufferSumMemory)
+                        );
 
                 }
                 catch (Exception ex)
@@ -234,29 +236,13 @@ namespace PyProcessors
                 {
                     OnProcessStarted?.Invoke(this, "Thinking...");
 
-                    //var chatHistory = Array.Empty<(string, string)>();
-                    //if (!string.IsNullOrWhiteSpace(lastQuestion) && !string.IsNullOrWhiteSpace(lastAnswer))
-                    //{
-                    //    Array.Fill<(string, string)>(chatHistory, (lastQuestion, lastAnswer));
-                    //}
-                    //var chat_history = chatHistory.ToPython();
-                    //var qry = $"{{'question': '{question}', 'chat_history': '{lastAnswer}' }}";
+                    
                     dynamic result = qaConversation(Py.kw("inputs", Py.kw("question", question)));
 
                     
-                    
-                    //var parameters = new[]
-                    //{
-                    //    Py.kw("question", question),
-                    //    Py.kw("chat_history", chat_history)
-                    //};
-                    //dynamic result = qaConversation(Py.kw("inputs", args));
-                    
-                    //return result;
                     var answer = result["answer"];
                     var pyString = new PyString(answer);
                    
-                    //return result;
                     OnProcessCompleted?.Invoke(this, true);
                     return pyString.ToString();
                 }

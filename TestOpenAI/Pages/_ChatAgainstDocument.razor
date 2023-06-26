@@ -124,7 +124,8 @@
         await Task.Delay(1);
         if (!string.IsNullOrWhiteSpace(selectedIndex))
         {
-            qa = faissChatProcessor.GetChatModule(selectedIndex);
+            //qa = faissChatProcessor.GetChatModule(selectedIndex);
+            qa = faissChatProcessor.GetConversationModule(selectedIndex);
         }
         messages.Clear();
         messages.Add(new ChatMessage(ChatRole.System, "Hi, how can I help you today with this document?"));
@@ -139,8 +140,10 @@
         {
             messages.Add(new ChatMessage(ChatRole.User, userInput));
             await InvokeAsync(StateHasChanged);
-            var result = faissChatProcessor.AskQuestion(qa, userInput);
-            //var result = faissChatProcessor.AskAQuestion(selectedIndex, userInput);
+            //var result = faissChatProcessor.AskQuestion(qa, userInput);
+            var lastQuestion = messages.LastOrDefault(x => x.Role == ChatRole.User)?.Content;
+            var lastAnswer = messages.LastOrDefault(x => x.Role == ChatRole.Assistant)?.Content;
+            var result = faissChatProcessor.AskConversationQuestion(qa, userInput, lastQuestion, lastAnswer);
             messages.Add(new ChatMessage(ChatRole.Assistant, result??"No result"));
             userInput = String.Empty;
             await InvokeAsync(StateHasChanged);

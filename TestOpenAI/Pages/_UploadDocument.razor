@@ -16,20 +16,7 @@
     private string processMsg = String.Empty;
     protected override void OnInitialized()
     {
-        //pdfProcessor.OnProcess += async (sender, msg) =>
-        //{
-        //    processMsg = msg;
-        //    await InvokeAsync(StateHasChanged);
-        //};
         pdfProcessor.OnProcess += HandleOnProcessed;
-        //pdfProcessor.OnCompleted += async (sender, success) =>
-        //{
-        //    if (success)
-        //        processMsg = String.Empty;
-        //    else
-        //        processMsg = "<span class='text-danger'>Error indexing file</span>";
-        //    await InvokeAsync(StateHasChanged);
-        //};
         pdfProcessor.OnCompleted += HandleOnCompleted;
     }
     private async void HandleOnProcessed(object? sender, string? msg)

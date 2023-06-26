@@ -89,17 +89,30 @@
     private void LoadIndexedDocuments()
     {
         dict.Clear();
-        var sourceFolder = Utility.GetDocumentSourceFolder(webHostEnvironment);
-        var indexFolder = Utility.GetDocumentIndexFolder(webHostEnvironment);
-        foreach (var file in Directory.GetFiles(sourceFolder))
+        var sourceFolderRoot = Utility.GetDocumentSourceFolder(webHostEnvironment);
+        var indexFolderRoot = Utility.GetDocumentIndexFolder(webHostEnvironment);
+
+        //check directories in sourceFolder
+        foreach (var dirInfo in (new DirectoryInfo(sourceFolderRoot)).GetDirectories())
         {
-            var sourceFileName = Path.GetFileNameWithoutExtension(file);
-            var indexFolderName = Path.Combine(Utility.GetDocumentIndexFolder(webHostEnvironment), PyProcessors.Helpers.Utility.CleanString(sourceFileName));
-            if (Directory.Exists(indexFolderName) && Directory.GetFiles(indexFolderName).Any()) 
+            var sourceFolderName = dirInfo.Name;
+            var sourceFolder = Path.Combine(sourceFolderRoot, sourceFolderName);
+            var indexFolder = Path.Combine(indexFolderRoot, PyProcessors.Helpers.Utility.CleanString(sourceFolderName));
+            if(Directory.GetFiles(sourceFolder).Any() && Directory.GetFiles(indexFolder).Any())
             {
-                dict.Add(sourceFileName, indexFolderName);
+                dict.Add(sourceFolderName, indexFolder);   
             }
+
         }
+        //foreach (var file in Directory.GetFiles(sourceFolder))
+        //{
+        //    var sourceFileName = Path.GetFileNameWithoutExtension(file);
+        //    var indexFolderName = Path.Combine(Utility.GetDocumentIndexFolder(webHostEnvironment), PyProcessors.Helpers.Utility.CleanString(sourceFileName));
+        //    if (Directory.Exists(indexFolderName) && Directory.GetFiles(indexFolderName).Any()) 
+        //    {
+        //        dict.Add(sourceFileName, indexFolderName);
+        //    }
+        //}
     }
     private async void OnSelectChanged(ChangeEventArgs args)
     {

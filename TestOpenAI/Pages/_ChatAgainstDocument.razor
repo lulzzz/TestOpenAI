@@ -29,6 +29,10 @@
             {
                 <_ChatMessage chatMessage="@msg" />
             }
+            @if (isThinking)
+            {
+                <_ChatMessage ShowPlaceholder="true" chatMessage="@(new ChatMessage(ChatRole.Assistant, "Thinking..."))" />
+            }
         </div>
     </div>
     @if (isReady)
@@ -54,6 +58,7 @@
     dynamic? qa;
     protected string processMessage { get; set; } = string.Empty;
     ElementReference bodyMessages;
+    bool isThinking = false;
 
     protected override void OnInitialized()
     {
@@ -142,11 +147,19 @@
         if (!string.IsNullOrWhiteSpace(selectedIndex) && !string.IsNullOrWhiteSpace(userInput))
         {
             messages.Add(new ChatMessage(ChatRole.User, userInput));
+            isThinking = true;
             await InvokeAsync(StateHasChanged);
+            await Task.Delay(1);
             //var result = faissChatProcessor.AskQuestion(qa, userInput);
             var lastQuestion = messages.LastOrDefault(x => x.Role == ChatRole.User)?.Content;
             var lastAnswer = messages.LastOrDefault(x => x.Role == ChatRole.Assistant)?.Content;
+            
             var result = faissChatProcessor.AskConversationQuestion(qa, userInput, lastQuestion, lastAnswer);
+            
+            isThinking = false;
+            await InvokeAsync(StateHasChanged);
+            await Task.Delay(1);
+
             messages.Add(new ChatMessage(ChatRole.Assistant, result??"No result"));
             userInput = String.Empty;
             await InvokeAsync(StateHasChanged);

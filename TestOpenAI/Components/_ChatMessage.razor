@@ -3,7 +3,8 @@
 <div class="d-flex flex-row @justifyContent mb-4">
     @if (!String.IsNullOrWhiteSpace(imgSrc) && (chatMessage.Role == ChatRole.System || chatMessage.Role == ChatRole.Assistant))
     {
-        <img style="height:45px;width:45px;" src="@imgSrc" />
+        @*<img style="height:45px;width:45px;" src="@imgSrc" />*@
+        <i class="fa-solid fa-robot"></i>
     }
     <div class="p-3 @startEndMargin border border-1 rounded mt-auto white-space-preline @(ShowPlaceholder ? "placeholder-glow":"")" style="background-color: @backgroundColor;">
         <p class="mb-0 @(ShowPlaceholder ? "placeholder" : "")">
@@ -24,7 +25,8 @@
     </div>
     @if (!String.IsNullOrWhiteSpace(imgSrc) && (chatMessage.Role == ChatRole.User))
     {
-        <img style="height:45px;width:45px;" src="@imgSrc" />
+        @*<img style="height:45px;width:45px;" src="@imgSrc" />*@
+        <i class="fa-solid fa-user"></i>
     }
 </div>
 

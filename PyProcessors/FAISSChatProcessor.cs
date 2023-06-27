@@ -236,9 +236,13 @@ namespace PyProcessors
                     dynamic openApiLangChain = scope.Import("langchain.embeddings.openai");
                     dynamic question_answering = scope.Import("langchain.chains.question_answering");// import load_qa_with_sources_chain
 
-                    string file = Path.Combine(_deployPath, @"PyScripts\AnswerConversationSummaryMemory.py");
-                    string code = File.ReadAllText(file); // Get the python file as raw text
-                    var scriptCompiled = PythonEngine.Compile(code, file); // Compile the code/file
+                    //string file = Path.Combine(_deployPath, @"PyScripts\AnswerConversationSummaryMemory.py");
+                    //string code = File.ReadAllText(file); // Get the python file as raw text
+                    using var mrs = Assembly.GetExecutingAssembly().GetManifestResourceStream("PyProcessors.PyScripts.AnswerConversationBufferWindowMemory.py");
+                    using var reader = new StreamReader(mrs);
+                    var code = reader.ReadToEnd();
+
+                    var scriptCompiled = PythonEngine.Compile(code);//, file); // Compile the code/file
                     scope.Execute(scriptCompiled);
 
                     openai.api_type = "azure";
@@ -255,7 +259,7 @@ namespace PyProcessors
                         Py.kw("temperature",0)
                         );
                     dynamic question_generator = chains.LLMChain(llm: llm, prompt: prompts.CONDENSE_QUESTION_PROMPT);
-                    dynamic doc_chain = question_answering.load_qa_chain(llm, chain_type: "map_reduce");
+                    dynamic doc_chain = question_answering.load_qa_chain(llm);//, chain_type: "map_reduce");
 
 
                     dynamic embeddings = openApiLangChain.OpenAIEmbeddings(
@@ -266,8 +270,8 @@ namespace PyProcessors
                                 );
                     dynamic vectorStore = vectorstores.FAISS.load_local(faissIndexModelPath, embeddings);
                     //dynamic bufferSumMemory = sumMemory.ConversationSummaryMemory(Py.kw("llm", llm), Py.kw("memory_key", "chat_history"), Py.kw("return_messages", true.ToPython()));
-                    dynamic acsMemory = scope.Get("AnswerConversationSummaryMemory");
-                    dynamic bufferSumMemory = acsMemory(llm: llm, memory_key: "chat_history", return_messages: true.ToPython());
+                    dynamic acsMemory = scope.Get("AnswerConversationBufferWindowMemory");
+                    dynamic bufferSumMemory = acsMemory(llm: llm, memory_key: "chat_history", return_messages: true.ToPython(), k:2);
                     
                     qa = chains.ConversationalRetrievalChain(
                         retriever: vectorStore.as_retriever(),

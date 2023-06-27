@@ -7,6 +7,22 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="PyScripts\AnswerConversationBufferMemory.py" />
+    <None Remove="PyScripts\AnswerConversationBufferWindowMemory.py" />
+    <None Remove="PyScripts\AnswerConversationSummaryMemory.py" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="PyScripts\AnswerConversationBufferMemory.py">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="PyScripts\AnswerConversationBufferWindowMemory.py" />
+    <EmbeddedResource Include="PyScripts\AnswerConversationSummaryMemory.py">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Python.Included" Version="3.11.2" />
   </ItemGroup>
 
@@ -23,15 +39,6 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>PyLibraries.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="PyScripts\AnswerConversationSummaryMemory.py">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="PyScripts\AnswerConversationBufferMemory.py">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
 
 </Project>

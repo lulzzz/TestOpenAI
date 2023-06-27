@@ -3,6 +3,7 @@
 @using Python.Runtime;
 @using TestOpenAI.Helpers;
 @using Azure.AI.OpenAI;
+@using TestOpenAI.Services;
 @implements IDisposable;
 <h3>Chat Against Document</h3>
 <div class="card shadow mb-3">
@@ -59,6 +60,7 @@
     protected string processMessage { get; set; } = string.Empty;
     ElementReference bodyMessages;
     bool isThinking = false;
+    List<ResponseCitation> citations = new();
 
     protected override void OnInitialized()
     {
@@ -154,13 +156,13 @@
             var lastQuestion = messages.LastOrDefault(x => x.Role == ChatRole.User)?.Content;
             var lastAnswer = messages.LastOrDefault(x => x.Role == ChatRole.Assistant)?.Content;
             
-            var result = faissChatProcessor.AskConversationQuestion(qa, userInput, lastQuestion, lastAnswer);
+            PyProcessors.Models.AIResponse result = faissChatProcessor.AskConversationQuestion(qa, userInput, lastQuestion, lastAnswer);
             
             isThinking = false;
             await InvokeAsync(StateHasChanged);
             await Task.Delay(1);
 
-            messages.Add(new ChatMessage(ChatRole.Assistant, result??"No result"));
+            messages.Add(new ChatMessage(ChatRole.Assistant, result?.Answer ?? "No result"));
             userInput = String.Empty;
             await InvokeAsync(StateHasChanged);
             await Task.Delay(1);

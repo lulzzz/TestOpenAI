@@ -34,6 +34,7 @@ try
     });
     builder.Services.AddScoped<AZCognitiveSearch>((serviceProvider) =>
     {
+        
         var aoaiSettings = serviceProvider.GetService<IOptionsMonitor<AOAISettings>>()?.CurrentValue;
         return new AZCognitiveSearch(aoaiSettings?.AOAI_KEY, aoaiSettings?.AOAI_ENDPOINT, aoaiSettings?.AOAI_CHAT_DEPLOYMENT_NAME, aoaiSettings?.AOAI_CHAT_DEPLOYMENT_MODEL, aoaiSettings?.AOAI_EMBEDDED_DEPLOYMENT_MODEL);
     });

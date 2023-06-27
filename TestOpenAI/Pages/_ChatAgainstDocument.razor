@@ -3,6 +3,7 @@
 @using Python.Runtime;
 @using TestOpenAI.Helpers;
 @using Azure.AI.OpenAI;
+@using TestOpenAI.Services;
 @implements IDisposable;
 <h3>Chat Against Document</h3>
 <div class="card shadow mb-3">
@@ -22,22 +23,45 @@
 </div>
 @if (!string.IsNullOrWhiteSpace(selectedIndex))
 {
-    <div class="card shadow">
-        <div class="card-header">Chat</div>
-        <div class="card-body" style="height:400px; overflow-y:auto;" @ref="bodyMessages">
-            @foreach (var msg in messages ?? new List<ChatMessage>())
+    <div class="row" style="height:600px;">
+        <div class="col-9 d-flex flex-column justify-content-between">
+            <div class="card shadow">
+                <div class="card-header">Chat</div>
+                <div class="card-body" style="height:450px; overflow-y:auto;" @ref="bodyMessages">
+                    @foreach (var item in ChatMessagesWithCitations ?? new Dictionary<ChatMessage, List<ResponseCitation>>())
+                    {
+                        <_ChatMessage chatMessage="@item.Key" citations="@item.Value" OnCitationClicked="OnCitationClicked" />
+                    }
+                    @if (isThinking)
+                    {
+                        <_ChatMessage ShowPlaceholder="true" chatMessage="@(new ChatMessage(ChatRole.Assistant, "Thinking..."))" />
+                    }
+                </div>
+            </div>
+            @if (isReady)
             {
-                <_ChatMessage chatMessage="@msg" />
+                <div class="mt-4 border border-1 input-group shadow">
+                    <textarea class="form-control" rows="3" @bind="userInput" id="floatingInput" placeholder="Ask me something."></textarea>
+                    <button class="btn btn-outline-secondary" type="button" @onclick="DoChat"><i class="oi oi-arrow-circle-right"></i></button>
+                </div>
             }
         </div>
-    </div>
-    @if (isReady)
-    {
-        <div class="mt-4 border border-1 input-group shadow">
-            <textarea class="form-control" rows="3" @bind="userInput" id="floatingInput" placeholder="Ask me something."></textarea>
-            <button class="btn btn-outline-secondary" type="button" @onclick="DoChat"><i class="oi oi-arrow-circle-right"></i></button>
+        <div class="col-3">
+            <div class="card shadow" style="height:600px;overflow-y:auto">
+                <div class="card-header">Citations</div>
+                @if (citation != null)
+                {
+                    <div class="card-body">
+                        <h5 class="card-title">@citation.title</h5>
+                        <h6 class="small card-subtitle mb-2 text-muted">@citation.filepath</h6>
+                        <p class="card-text">@citation.content</p>
+                    </div>
+                }
+            </div>
         </div>
-    }
+    </div>
+    
+    
 }
 
 @code {
@@ -46,14 +70,18 @@
     [Inject] protected FAISSChatProcessor faissChatProcessor { get; set; } = null!;
     [Inject] protected IJSRuntime jsRuntime { get; set; } = null!;
 
+    public Dictionary<ChatMessage, List<ResponseCitation>> ChatMessagesWithCitations { get; set; } = new();
     string userInput;
     private string selectedIndex = String.Empty;
     private Dictionary<string, string> dict = new();
-    List<ChatMessage> messages = new();
+    //List<ChatMessage> messages = new();
     protected bool isReady { get; set; } = false;
     dynamic? qa;
     protected string processMessage { get; set; } = string.Empty;
     ElementReference bodyMessages;
+    bool isThinking = false;
+    List<ResponseCitation> citations = new();
+    ResponseCitation? citation;
 
     protected override void OnInitialized()
     {
@@ -130,8 +158,8 @@
             //qa = faissChatProcessor.GetChatModule(selectedIndex);
             qa = faissChatProcessor.GetConversationModule(selectedIndex);
         }
-        messages.Clear();
-        messages.Add(new ChatMessage(ChatRole.System, "Hi, how can I help you today with this document?"));
+        ChatMessagesWithCitations.Clear();
+        ChatMessagesWithCitations.Add(new ChatMessage(ChatRole.System, "Hi, how can I help you today with this document?"), new List<ResponseCitation>());
         isReady = true;
         processMessage = "";
         await InvokeAsync(StateHasChanged);
@@ -141,18 +169,48 @@
     {
         if (!string.IsNullOrWhiteSpace(selectedIndex) && !string.IsNullOrWhiteSpace(userInput))
         {
-            messages.Add(new ChatMessage(ChatRole.User, userInput));
+            //
+            ChatMessagesWithCitations.Add(new ChatMessage(ChatRole.User, userInput), new List<ResponseCitation>());
+            //messages.Add(new ChatMessage(ChatRole.User, userInput));
+            isThinking = true;
             await InvokeAsync(StateHasChanged);
-            //var result = faissChatProcessor.AskQuestion(qa, userInput);
-            var lastQuestion = messages.LastOrDefault(x => x.Role == ChatRole.User)?.Content;
-            var lastAnswer = messages.LastOrDefault(x => x.Role == ChatRole.Assistant)?.Content;
-            var result = faissChatProcessor.AskConversationQuestion(qa, userInput, lastQuestion, lastAnswer);
-            messages.Add(new ChatMessage(ChatRole.Assistant, result??"No result"));
+            await Task.Delay(1);
+            await jsRuntime.InvokeVoidAsync("scrollToBottom", bodyMessages);
+
+            var lastQuestion = ChatMessagesWithCitations.Keys.LastOrDefault(x=>x.Role == ChatRole.User)?.Content; // messages.LastOrDefault(x => x.Role == ChatRole.User)?.Content;
+            var lastAnswer = ChatMessagesWithCitations.Keys.LastOrDefault(x => x.Role == ChatRole.Assistant)?.Content;  //messages.LastOrDefault(x => x.Role == ChatRole.Assistant)?.Content;
+
+            PyProcessors.Models.AIResponse result = faissChatProcessor.AskConversationQuestion(qa, userInput, lastQuestion, lastAnswer);
+
+            isThinking = false;
+            await InvokeAsync(StateHasChanged);
+            await Task.Delay(1);
+
+            ChatMessage message = (new ChatMessage(ChatRole.Assistant, result?.Answer ?? "No result"));
+            List<ResponseCitation> citations = new();
+            if(result?.SourceDocuments != null)
+            {
+                foreach (var sourceDocument in result.SourceDocuments)
+                {
+                    citations.Add(new ResponseCitation()
+                    {
+                        content = sourceDocument.PageContent,
+                        title = sourceDocument.Metadata["source"] == null ? "" : Path.GetFileName(sourceDocument.Metadata["source"].ToString()),
+                        filepath = sourceDocument.Metadata["page"]?.ToString() ?? "" 
+
+                    });
+                }
+            }
+            ChatMessagesWithCitations.Add(message, citations);
             userInput = String.Empty;
             await InvokeAsync(StateHasChanged);
             await Task.Delay(1);
             await jsRuntime.InvokeVoidAsync("scrollToBottom", bodyMessages);
         }
+    }
+    private void OnCitationClicked(ResponseCitation clickedCitation)
+    {
+        citation = clickedCitation;
     }
     private void DisposeQA()
     {

@@ -111,6 +111,7 @@ namespace PyProcessors
         {
             try
             {
+                OnProcess?.Invoke(this, "Processing uploaded files");
                 var fileIndex = indexName.CleanString();
                 var indexPath = Path.Combine(dirIndex, fileIndex);
                 if (!Directory.Exists(indexPath))

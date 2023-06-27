@@ -2,6 +2,7 @@
 using Python.Runtime;
 using System.Collections;
 using System.Globalization;
+using System.Net.Sockets;
 using System.Reflection;
 using System.Resources;
 
@@ -14,7 +15,7 @@ namespace PyProcessors
         /// </summary>
         /// <param name="logAction">Logger to log any messages</param>
         /// <param name="pyLibModules">Extra set of optional Python libraries to install through <c>pip</c> e.g. <c>numpy</c></param>
-        public static async Task Initialize(Action<string>? logAction = null, params string[] pyLibModules)
+        public static async Task<nint> Initialize(Action<string>? logAction = null, params string[] pyLibModules)
         {
             var librariesToLoad = PyLibraries.libraries
                 .Split(',',StringSplitOptions.RemoveEmptyEntries)
@@ -40,8 +41,16 @@ namespace PyProcessors
                 }
             }
             PythonEngine.Initialize();
-            PythonEngine.BeginAllowThreads();
+            return PythonEngine.BeginAllowThreads();
             
+        }
+        public static void Shutdown(nint? pythonState)
+        {
+            if (pythonState.HasValue)
+            {
+                PythonEngine.EndAllowThreads(pythonState.Value);
+            }
+            PythonEngine.Shutdown();
         }
 
     }

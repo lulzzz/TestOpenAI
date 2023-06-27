@@ -1,12 +1,12 @@
 ﻿@using Azure.AI.OpenAI;
 @using TestOpenAI.Services;
 <div class="d-flex flex-row @justifyContent mb-4">
-    @if (!String.IsNullOrWhiteSpace(imgSrc) && (chatMessage.Role == ChatRole.System || chatMessage.Role == ChatRole.Assistant))
+    @if (machineRoles.Contains(chatMessage.Role))
     {
-        <img style="height:45px;width:45px;" src="@imgSrc" />
+        <i class="fa-solid fa-robot"></i>
     }
-    <div class="p-3 @startEndMargin border border-1 rounded mt-auto white-space-preline" style="background-color: @backgroundColor;">
-        <p class="mb-0">
+    <div class="p-3 @startEndMargin border border-1 rounded mt-auto white-space-preline @(ShowPlaceholder ? "placeholder-glow":"")" style="background-color: @backgroundColor;">
+        <p class="mb-0 @(ShowPlaceholder ? "placeholder" : "")">
             @((MarkupString)chatMessage.Content)
             @if(citations!=null && citations.Any())
             {
@@ -15,16 +15,16 @@
                     <ul class="list-inline">
                         @foreach (var citation in citations)
                         {
-                            <li class="list-inline-item">@($"{citations.IndexOf(citation) + 1}.") <span class="btn btn-link ps-0" @onclick="@(()=>{CitationClicked(citation.uniqueid);})">@citation.filepath</span></li>
+                            <li class="list-inline-item">@($"{citations.IndexOf(citation) + 1}.") <span class="btn btn-link ps-0" @onclick="@(()=>{CitationClicked(citation);})">@citation.filepath</span></li>
                         }
                     </ul>
                 </p>
             }
         </p>
     </div>
-    @if (!String.IsNullOrWhiteSpace(imgSrc) && (chatMessage.Role == ChatRole.User))
+    @if (chatMessage.Role == ChatRole.User)
     {
-        <img style="height:45px;width:45px;" src="@imgSrc" />
+        <i class="fa-solid fa-user"></i>
     }
 </div>
 
@@ -32,36 +32,39 @@
     [Parameter] public ChatMessage chatMessage{ get; set; }
     [Parameter] public List<ResponseCitation>? citations{ get; set; }
     [Parameter] public EventCallback<ResponseCitation> OnCitationClicked{ get; set; }
-    private string justifyContent;
-    private string imgSrc;
-    private string backgroundColor;
-    private string startEndMargin;
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    [Parameter] public bool ShowPlaceholder { get; set; } = false;
+    private string justifyContent = "";
+    //private string imgSrc;
+    private string backgroundColor = "";
+    private string startEndMargin = "";
+    private ChatRole[] machineRoles = new ChatRole[] { ChatRole.System, ChatRole.Assistant };
+
+    protected override void OnInitialized()
     {
         switch (chatMessage.Role)
         {
-            case var value when (value == ChatRole.System || value==ChatRole.Assistant):
+            case var value when machineRoles.Contains(value): // (value == ChatRole.System || value==ChatRole.Assistant):
                 justifyContent = "justify-content-start";
-                imgSrc = "https://ui-avatars.com/api/?rounded=true&name=OAI&length=3&size=45";
+                //imgSrc = "https://ui-avatars.com/api/?rounded=true&name=OAI&length=3&size=45";
                 backgroundColor = "rgba(57, 192, 237,.2)";
                 startEndMargin = "ms-3";
                 break;
             case var value when (value == ChatRole.User):
                 justifyContent = "justify-content-end";
-                imgSrc = "https://ui-avatars.com/api/?name=me&rounded=true&size=45";
+                //imgSrc = "https://ui-avatars.com/api/?name=me&rounded=true&size=45";
                 backgroundColor = "#fbfbfb";
                 startEndMargin = "me-3";
                 break;
             default:
                 break;
         }
-        await InvokeAsync(StateHasChanged);
     }
-    private async Task CitationClicked(string uniqueid)
+    
+    private async Task CitationClicked(ResponseCitation citation)
     {
         if (OnCitationClicked.HasDelegate)
         {
-            await OnCitationClicked.InvokeAsync(citations.FirstOrDefault(x => x.uniqueid == uniqueid));
+            await OnCitationClicked.InvokeAsync(citation);
         }   
     }
 }

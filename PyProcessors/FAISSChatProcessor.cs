@@ -156,12 +156,10 @@ namespace PyProcessors
                 {
                     dynamic vectorstores = scope.Import("langchain.vectorstores");
                     dynamic chains = scope.Import("langchain.chains");
-                    //dynamic question_answering = scope.Import("langchain.chains.question_answering");
                     dynamic chat_models = scope.Import("langchain.chat_models");
                     dynamic openApiLangChain = scope.Import("langchain.embeddings.openai");
                     dynamic openai = scope.Import("openai");
                     dynamic prompts = scope.Import("langchain.prompts");
-                    //dynamic memory = scope.Import("langchain.memory");
                     dynamic sumMemory = scope.Import("langchain.chains.conversation.memory");
 
 
@@ -188,11 +186,7 @@ namespace PyProcessors
                     dynamic vectorStore = vectorstores.FAISS.load_local(faissIndexModelPath, embeddings);
 
                     //use the faiss vector store we saved to search the local document
-                    dynamic retriever = vectorStore.as_retriever();//
-                        //Py.kw("search_type", "similarity"),
-                        ////Py.kw("search_kwargs", "{ \"k\":2}")
-                        //Py.kw("search_kwargs", Py.kw("k", 2))
-                        //);
+                    dynamic retriever = vectorStore.as_retriever();
 
                     var promptTemplate = @"""Given the following conversation and a follow up question, rephrase the follow up question to be a standalone question.
 
@@ -201,7 +195,6 @@ namespace PyProcessors
                             Follow Up Input: {question}
                             Standalone question:""";
                     dynamic CONDENSE_QUESTION_PROMPT = prompts.PromptTemplate.from_template(promptTemplate);
-                    //var bufferMemory = memory.ConversationBufferMemory(Py.kw("memory_key", "chat_history"), Py.kw("return_messages", true.ToPython()));
                     var bufferSumMemory = sumMemory.ConversationSummaryMemory(Py.kw("llm", llm), Py.kw("memory_key", "chat_history"), Py.kw("return_messages", true.ToPython()));
                     qa = chains.ConversationalRetrievalChain.from_llm(
                         Py.kw("llm", llm),

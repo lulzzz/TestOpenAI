@@ -5,8 +5,8 @@
     {
         <img style="height:45px;width:45px;" src="@imgSrc" />
     }
-    <div class="p-3 @startEndMargin border border-1 rounded mt-auto white-space-preline" style="background-color: @backgroundColor;">
-        <p class="mb-0">
+    <div class="p-3 @startEndMargin border border-1 rounded mt-auto white-space-preline @(ShowPlaceholder ? "placeholder-glow":"")" style="background-color: @backgroundColor;">
+        <p class="mb-0 @(ShowPlaceholder ? "placeholder" : "")">
             @((MarkupString)chatMessage.Content)
             @if(citations!=null && citations.Any())
             {
@@ -32,6 +32,7 @@
     [Parameter] public ChatMessage chatMessage{ get; set; }
     [Parameter] public List<ResponseCitation>? citations{ get; set; }
     [Parameter] public EventCallback<ResponseCitation> OnCitationClicked{ get; set; }
+    [Parameter] public bool ShowPlaceholder { get; set; } = false;
     private string justifyContent;
     private string imgSrc;
     private string backgroundColor;

@@ -312,7 +312,7 @@ namespace PyProcessors
                     if(sourceDocuments!= null)
                     {
                         PyList docList = new PyList(sourceDocuments);
-                        List<Models.SourceDocument> docs = new();
+                        //List<Models.SourceDocument> docs = new();
                         foreach (dynamic item in docList)
                         {
                             var doc = new Models.SourceDocument();
@@ -322,8 +322,9 @@ namespace PyProcessors
                             {
                                 doc.Metadata.Add(key.ToString(), docDict[key]);
                             }
+                            response.SourceDocuments.Add(doc);
                         }
-                        response.SourceDocuments.AddRange(docs);
+                        //response.SourceDocuments.AddRange(docs);
                     }
 
                     OnProcessCompleted?.Invoke(this, true);

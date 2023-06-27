@@ -15,7 +15,7 @@
                     <ul class="list-inline">
                         @foreach (var citation in citations)
                         {
-                            <li class="list-inline-item">@($"{citations.IndexOf(citation) + 1}.") <span class="btn btn-link ps-0" @onclick="@(()=>{CitationClicked(citation.uniqueid);})">@citation.filepath</span></li>
+                            <li class="list-inline-item">@($"{citations.IndexOf(citation) + 1}.") <span class="btn btn-link ps-0" @onclick="@(()=>{CitationClicked(citation);})">@citation.filepath</span></li>
                         }
                     </ul>
                 </p>
@@ -60,11 +60,11 @@
         }
     }
     
-    private async Task CitationClicked(string uniqueid)
+    private async Task CitationClicked(ResponseCitation citation)
     {
         if (OnCitationClicked.HasDelegate)
         {
-            await OnCitationClicked.InvokeAsync(citations.FirstOrDefault(x => x.uniqueid == uniqueid));
+            await OnCitationClicked.InvokeAsync(citation);
         }   
     }
 }

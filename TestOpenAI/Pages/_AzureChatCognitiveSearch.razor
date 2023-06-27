@@ -19,7 +19,7 @@
                 }
                 @if (processing)
                 {
-                    <_ChatMessage chatMessage="busyChatMessage"/>
+                    <_ChatMessage ShowPlaceholder="true" chatMessage="@(new ChatMessage(ChatRole.Assistant, "Thinking..."))" />
                 }
             </div>
         </div>

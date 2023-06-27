@@ -24,7 +24,7 @@
 {
     <div class="card shadow">
         <div class="card-header">Chat</div>
-        <div class="card-body" style="height:400px; overflow-y:auto;">
+        <div class="card-body" style="height:400px; overflow-y:auto;" @ref="bodyMessages">
             @foreach (var msg in messages ?? new List<ChatMessage>())
             {
                 <_ChatMessage chatMessage="@msg" />
@@ -44,6 +44,7 @@
     [Inject] protected ModalService modalService { get; set; } = null!;
     [Inject] protected IWebHostEnvironment webHostEnvironment { get; set; } = null!;
     [Inject] protected FAISSChatProcessor faissChatProcessor { get; set; } = null!;
+    [Inject] protected IJSRuntime jsRuntime { get; set; } = null!;
 
     string userInput;
     private string selectedIndex = String.Empty;
@@ -52,6 +53,8 @@
     protected bool isReady { get; set; } = false;
     dynamic? qa;
     protected string processMessage { get; set; } = string.Empty;
+    ElementReference bodyMessages;
+
     protected override void OnInitialized()
     {
         faissChatProcessor.OnProcessStarted += async (sender, str) =>
@@ -147,7 +150,8 @@
             messages.Add(new ChatMessage(ChatRole.Assistant, result??"No result"));
             userInput = String.Empty;
             await InvokeAsync(StateHasChanged);
-
+            await Task.Delay(1);
+            await jsRuntime.InvokeVoidAsync("scrollToBottom", bodyMessages);
         }
     }
     private void DisposeQA()

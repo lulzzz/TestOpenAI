@@ -31,4 +31,13 @@
     <ProjectReference Include="..\PyProcessors\PyProcessors.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Update="wwwroot\vendor\fontawesome.min.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Update="wwwroot\vendor\solid.min.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>

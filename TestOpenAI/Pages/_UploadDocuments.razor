@@ -19,34 +19,40 @@
     </div>
 </div>
 
-@for (int i = 0; i < numberOfInputFiles; i++)
+
+@if (processing)
 {
-    <InputFile @key="i" OnChange="OnFileChanged" multiple style="@GetInputFileStyle(i)" accept=".pdf"></InputFile>
+    <div class="alert alert-secondary">
+        @(
+            (MarkupString)processMsg
+         )
+    </div>
 }
-    
-<div>
-    @((MarkupString)processMsg)
-</div>
-
-<table class="table table-sm table-striped small mt-3 border-top border-bottom">
-    <thead>
-        <tr>
-            <th>File Name</th>
-            <th><span role="button" class="btn-link float-end" @onclick="@(()=>{lstFiles.Clear();})">Remove All</span></th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var file in lstFiles)
-        {
+else 
+{
+    @for (int i = 0; i < numberOfInputFiles; i++)
+    {
+        <InputFile @key="i" OnChange="OnFileChanged" multiple style="@GetInputFileStyle(i)" accept=".pdf"></InputFile>
+    }
+    <table class="table table-sm table-striped small mt-3 border-top border-bottom">
+        <thead>
             <tr>
-                <td>@file.Name</td>
-                <td><span class="btn-link float-end" role="button" @onclick="@(()=> {RemoveFile(file);})">Remove</span></td>
+                <th>File Name</th>
+                <th><span role="button" class="btn-link float-end" @onclick="@(()=>{lstFiles.Clear();})">Remove All</span></th>
             </tr>
-        }
-    </tbody>
-</table>
-<button class="btn btn-primary" @onclick="ProcessFiles">Upload files</button>
-
+        </thead>
+        <tbody>
+            @foreach (var file in lstFiles)
+            {
+                <tr>
+                    <td>@file.Name</td>
+                    <td><span class="btn-link float-end" role="button" @onclick="@(()=> {RemoveFile(file);})">Remove</span></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <button class="btn btn-primary" @onclick="ProcessFiles">Upload files</button>
+}
 
 @code {
     [Inject] protected IWebHostEnvironment webHostEnvironment { get; set; } = null!;
@@ -59,7 +65,7 @@
     string? status;
     int numberOfInputFiles = 1;
 
-
+    bool processing = false;
     string indexName = String.Empty;
 
     string IndexName
@@ -122,7 +128,7 @@
         indexExists = pdfProcessor.IndexExists(IndexName, documentIndexDir);
         if (indexExists)
             return;
-
+        processing = true;
         var sourceDir = Path.Combine(documentSourceFolder, IndexName);
         if (!Directory.Exists(sourceDir))
             Directory.CreateDirectory(sourceDir);
@@ -130,7 +136,9 @@
         List<PyProcessors.UploadFile> uploadFiles = new();
         foreach(var file in lstFiles)
         {
-            var path = Path.Combine(sourceDir, Path.GetFileName(file.Name));
+            var fileName = Path.GetFileName(file.Name);
+            processMsg = $"Uploading {fileName}";
+            var path = Path.Combine(sourceDir, fileName);
             await using FileStream fs = new(path, FileMode.Create);
             await file.OpenReadStream(file.Size).CopyToAsync(fs);
             fs.Flush();
@@ -138,9 +146,12 @@
             var uploadFile = new UploadFile() { FilePath = path, ContentType = file.ContentType };
             uploadFiles.Add(uploadFile);
         }
+        lstFiles.Clear();
         var indexFileName = pdfProcessor.ProcessPdfs(IndexName, documentIndexDir, uploadFiles);
         if (OnIndexed.HasDelegate)
             await OnIndexed.InvokeAsync(indexFileName);
+        processMsg = String.Empty;
+        processing = false;
     }
     void RemoveFile(IBrowserFile file)
     {
